@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,7 +32,6 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   bool _dataExtracted = false;
   bool _isImageToPdf = false;
   List<String> _imagePaths = [];
-  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -74,8 +74,6 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   }
 
   Future<void> _startRealConversion() async {
-    setState(() => _isProcessing = true);
-
     try {
       final dir = await getApplicationDocumentsDirectory();
       final outputPath = '${dir.path}/$_fileName';
@@ -116,8 +114,6 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Conversion failed: ${e.toString()}')),
       );
-    } finally {
-      setState(() => _isProcessing = false);
     }
   }
 

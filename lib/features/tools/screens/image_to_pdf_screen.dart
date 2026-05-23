@@ -20,7 +20,6 @@ final class ImageToPdfScreen extends ConsumerStatefulWidget {
 final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
   final _filePicker = FilePickerService();
   final _images = <_ImageItem>[];
-  bool _isLoading = false;
 
   Future<void> _pickImages() async {
     final files = await _filePicker.pickImages();
@@ -86,7 +85,7 @@ final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text('JPG to PDF', style: AppTextStyles.title),
+        title: Text('JPG to PDF', style: AppTextStyles.title),
       ),
       body: SafeArea(
         child: Column(

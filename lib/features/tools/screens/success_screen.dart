@@ -163,9 +163,11 @@ final class SuccessScreen extends StatelessWidget {
               icon: Icons.share_rounded,
               onTap: () async {
                 try {
-                  await Share.shareXFiles(
-                    [XFile(filePath)],
-                    text: fileName,
+                  await SharePlus.instance.share(
+                    ShareParams(
+                      files: [XFile(filePath)],
+                      text: fileName,
+                    ),
                   );
                 } catch (e) {
                   if (context.mounted) {
