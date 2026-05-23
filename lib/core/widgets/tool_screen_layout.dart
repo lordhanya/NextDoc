@@ -14,7 +14,7 @@ final class ToolScreenLayout extends StatelessWidget {
   final IconData dropIcon;
   final String dropTitle;
   final String dropSubtitle;
-  final VoidCallback onUpload;
+  final Future<void> Function() onUpload;
 
   const ToolScreenLayout({
     super.key,
@@ -105,7 +105,7 @@ final class ToolScreenLayout extends StatelessWidget {
 }
 
 final class _UploadButton extends StatefulWidget {
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   const _UploadButton({required this.onTap});
 
@@ -115,14 +115,24 @@ final class _UploadButton extends StatefulWidget {
 
 final class _UploadButtonState extends State<_UploadButton> {
   bool _isPressed = false;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap.call();
+      onTapDown: _isLoading ? null : (_) => setState(() => _isPressed = true),
+      onTapUp: _isLoading ? null : (_) async {
+        setState(() {
+          _isPressed = false;
+          _isLoading = true;
+        });
+        try {
+          await widget.onTap();
+        } finally {
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+        }
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
@@ -136,10 +146,19 @@ final class _UploadButtonState extends State<_UploadButton> {
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Center(
-            child: Text(
-              'Select Files',
-              style: AppTextStyles.button,
-            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.onPrimary,
+                    ),
+                  )
+                : Text(
+                    'Select Files',
+                    style: AppTextStyles.button,
+                  ),
           ),
         ),
       ),

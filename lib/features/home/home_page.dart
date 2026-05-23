@@ -1,33 +1,42 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/providers/recent_files_provider.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/animated_tool_card.dart';
 import '../../core/widgets/custom_search_bar.dart';
-import '../../core/widgets/glass_card.dart';
+import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/section_title.dart';
-import 'models/recent_file_model.dart';
+import '../../core/widgets/pdf_thumbnail_card.dart';
+import '../../core/database/recent_file_entity.dart';
 
-final class HomePage extends StatelessWidget {
+final class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   static const _quickTools = [
-    (icon: LucideIcons.filePlus, label: 'Merge PDF'),
-    (icon: LucideIcons.minimize, label: 'Compress PDF'),
-    (icon: LucideIcons.image, label: 'JPG to PDF'),
-    (icon: LucideIcons.scissors, label: 'Split PDF'),
+    (icon: LucideIcons.filePlus, label: 'Merge PDF', route: '/tools/merge'),
+    (icon: LucideIcons.minimize, label: 'Compress PDF', route: '/tools/compress'),
+    (icon: LucideIcons.image, label: 'JPG to PDF', route: '/tools/image-to-pdf'),
+    (icon: LucideIcons.scissors, label: 'Split PDF', route: '/tools/split'),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentFilesAsync = ref.watch(recentFilesProvider);
+    final files = recentFilesAsync.valueOrNull ?? [];
+
     return SafeArea(
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHeader(context)),
           SliverToBoxAdapter(child: _buildSearchBar()),
           SliverToBoxAdapter(child: _buildQuickToolsSection(context)),
-          SliverToBoxAdapter(child: _buildRecentSection(context)),
+          SliverToBoxAdapter(
+            child: _buildRecentSection(context, ref, files),
+          ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
         ],
       ),
@@ -95,7 +104,7 @@ final class HomePage extends StatelessWidget {
               return AnimatedToolCard(
                 icon: tool.icon,
                 label: tool.label,
-                onTap: () {},
+                onTap: () => context.push(tool.route),
               );
             },
           ),
@@ -104,7 +113,11 @@ final class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentSection(BuildContext context) {
+  Widget _buildRecentSection(
+    BuildContext context,
+    WidgetRef ref,
+    List<RecentFileEntity> files,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
@@ -117,74 +130,101 @@ final class HomePage extends StatelessWidget {
         children: [
           SectionTitle(
             title: 'Recent Files',
-            actionLabel: 'View all',
+            actionLabel: files.isEmpty ? null : 'View all',
             onActionTap: () {},
           ),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: fakeRecentFiles.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, index) {
-              final file = fakeRecentFiles[index];
-              return _RecentFileCard(file: file);
-            },
-          ),
+          if (files.isEmpty)
+            const EmptyStateWidget(
+              icon: LucideIcons.fileText,
+              title: 'No recent files',
+              subtitle: 'Files you process will appear here',
+            )
+          else
+            _RecentFilesGrid(files: files),
         ],
       ),
     );
   }
 }
 
-final class _RecentFileCard extends StatelessWidget {
-  final RecentFile file;
+final class _RecentFilesGrid extends ConsumerWidget {
+  final List<RecentFileEntity> files;
 
-  const _RecentFileCard({required this.file});
+  const _RecentFilesGrid({required this.files});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        childAspectRatio: 0.72,
+      ),
+      itemCount: files.length,
+      itemBuilder: (context, index) {
+        final file = files[index];
+        final heroTag = 'pdf_${file.id}';
+        final thumbnailAsync = ref.watch(pdfThumbnailProvider(file.filePath));
+
+        return thumbnailAsync.when(
+          data: (bytes) => _FileCard(
+            file: file,
+            heroTag: heroTag,
+            thumbnailBytes: bytes,
+          ),
+          loading: () => _FileCard(
+            file: file,
+            heroTag: heroTag,
+            thumbnailBytes: null,
+          ),
+          error: (_, _) => _FileCard(
+            file: file,
+            heroTag: heroTag,
+            thumbnailBytes: null,
+          ),
+        );
+      },
+    );
+  }
+}
+
+final class _FileCard extends StatelessWidget {
+  final RecentFileEntity file;
+  final String heroTag;
+  final Uint8List? thumbnailBytes;
+
+  const _FileCard({
+    required this.file,
+    required this.heroTag,
+    this.thumbnailBytes,
+  });
+
+  String _formattedSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      onTap: () {},
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: file.iconColor.withAlpha(25),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Icon(file.icon, size: 22, color: file.iconColor),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file.name,
-                  style: AppTextStyles.titleSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '${file.path} • ${file.size}',
-                  style: AppTextStyles.caption,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: Text(
-              file.formattedDate,
-              style: AppTextStyles.caption,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+    return PdfThumbnailCard(
+      heroTag: heroTag,
+      thumbnailBytes: thumbnailBytes,
+      fileName: file.fileName,
+      fileSize: _formattedSize(file.fileSize),
+      pageCount: file.pageCount > 0 ? file.pageCount : 1,
+      onTap: () => context.push(
+        '/pdf-detail',
+        extra: {
+          'filePath': file.filePath,
+          'fileName': file.fileName,
+          'fileSize': file.fileSize,
+          'pageCount': file.pageCount > 0 ? file.pageCount : 1,
+          'heroTag': heroTag,
+        },
       ),
     );
   }

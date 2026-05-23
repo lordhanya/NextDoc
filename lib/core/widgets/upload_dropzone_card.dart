@@ -8,7 +8,7 @@ final class UploadDropzoneCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback? onTap;
+  final Future<void> Function()? onTap;
 
   const UploadDropzoneCard({
     super.key,
@@ -29,9 +29,9 @@ final class _UploadDropzoneCardState extends State<UploadDropzoneCard> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _isHovered = true),
-      onTapUp: (_) {
+      onTapUp: (_) async {
         setState(() => _isHovered = false);
-        widget.onTap?.call();
+        await widget.onTap?.call();
       },
       onTapCancel: () => setState(() => _isHovered = false),
       child: AnimatedContainer(
