@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_colors.dart';
 import '../theme/typography.dart';
-import 'glass_card.dart';
-import 'section_title.dart';
+import 'recent_files_section.dart';
 import 'upload_dropzone_card.dart';
-import '../../features/home/models/recent_file_model.dart';
 
-final class ToolScreenLayout extends StatelessWidget {
+final class ToolScreenLayout extends ConsumerWidget {
   final String title;
   final IconData dropIcon;
   final String dropTitle;
@@ -26,7 +25,7 @@ final class ToolScreenLayout extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -40,7 +39,11 @@ final class ToolScreenLayout extends StatelessWidget {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildUploadZone(context)),
-            SliverToBoxAdapter(child: _buildRecentSection()),
+            SliverToBoxAdapter(
+              child: RecentFilesSection(
+                displayMode: RecentFilesDisplayMode.list,
+              ),
+            ),
             const SliverToBoxAdapter(
               child: SizedBox(height: AppSpacing.xxxl),
             ),
@@ -70,33 +73,6 @@ final class ToolScreenLayout extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: _UploadButton(onTap: onUpload),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenPadding,
-        AppSpacing.xxl,
-        AppSpacing.screenPadding,
-        0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionTitle(title: 'Recent Files'),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: fakeRecentFiles.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, index) {
-              final file = fakeRecentFiles[index];
-              return _RecentFileRow(file: file);
-            },
           ),
         ],
       ),
@@ -161,59 +137,6 @@ final class _UploadButtonState extends State<_UploadButton> {
                   ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-final class _RecentFileRow extends StatelessWidget {
-  final RecentFile file;
-
-  const _RecentFileRow({required this.file});
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: file.iconColor.withAlpha(25),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Icon(file.icon, size: 22, color: file.iconColor),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file.name,
-                  style: AppTextStyles.titleSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '${file.path} • ${file.size}',
-                  style: AppTextStyles.caption,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: Text(
-              file.formattedDate,
-              style: AppTextStyles.caption,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ),
     );
   }
