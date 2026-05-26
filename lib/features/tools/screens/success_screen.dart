@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/services/file_action_service.dart';
 import '../../../core/theme/typography.dart';
 
 final class SuccessScreen extends StatelessWidget {
@@ -50,9 +49,9 @@ final class SuccessScreen extends StatelessWidget {
               ),
               const Spacer(),
               if (filePath.isNotEmpty)
-                _buildFileInfo(context, fileName, fileSize, pageCount, filePath),
+                _buildFileInfo(fileName, fileSize, pageCount),
               const Spacer(flex: 2),
-              _buildActions(context, filePath, fileName),
+              _SuccessActions(filePath: filePath, fileName: fileName),
               const SizedBox(height: AppSpacing.lg),
             ],
           ),
@@ -80,13 +79,7 @@ final class SuccessScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFileInfo(
-    BuildContext context,
-    String fileName,
-    int fileSize,
-    int pageCount,
-    String filePath,
-  ) {
+  Widget _buildFileInfo(String fileName, int fileSize, int pageCount) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -130,57 +123,62 @@ final class SuccessScreen extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildActions(BuildContext context, String filePath, String fileName) {
-    final hasFile = filePath.isNotEmpty;
+final class _SuccessActions extends StatefulWidget {
+  final String filePath;
+  final String fileName;
 
+  const _SuccessActions({
+    required this.filePath,
+    required this.fileName,
+  });
+
+  @override
+  State<_SuccessActions> createState() => _SuccessActionsState();
+}
+
+final class _SuccessActionsState extends State<_SuccessActions> {
+  bool _isOpening = false;
+  bool _isSharing = false;
+
+  Future<void> _openFile() async {
+    setState(() => _isOpening = true);
+    await FileActionService.openPdf(context, widget.filePath);
+    if (mounted) setState(() => _isOpening = false);
+  }
+
+  Future<void> _shareFile() async {
+    setState(() => _isSharing = true);
+    await FileActionService.sharePdf(context, widget.filePath, widget.fileName);
+    if (mounted) setState(() => _isSharing = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
-        if (hasFile) ...[
-          SizedBox(
-            width: double.infinity,
-            child: _ActionButton(
-              label: 'Open PDF',
-              icon: Icons.open_in_new_rounded,
-              isPrimary: true,
-              onTap: () {
-                final file = File(filePath);
-                context.push('/pdf-detail', extra: {
-                  'filePath': filePath,
-                  'fileName': fileName,
-                  'fileSize': file.lengthSync(),
-                  'pageCount': 0,
-                  'heroTag': 'success_pdf',
-                });
-              },
-            ),
+        SizedBox(
+          width: double.infinity,
+          child: _ActionButton(
+            label: 'Open PDF',
+            icon: Icons.open_in_new_rounded,
+            isPrimary: true,
+            isLoading: _isOpening,
+            onTap: _openFile,
           ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: _ActionButton(
-              label: 'Share PDF',
-              icon: Icons.share_rounded,
-              onTap: () async {
-                try {
-                  await SharePlus.instance.share(
-                    ShareParams(
-                      files: [XFile(filePath)],
-                      text: fileName,
-                    ),
-                  );
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Share failed: $e')),
-                    );
-                  }
-                }
-              },
-            ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          width: double.infinity,
+          child: _ActionButton(
+            label: 'Share PDF',
+            icon: Icons.share_rounded,
+            isLoading: _isSharing,
+            onTap: _shareFile,
           ),
-          const SizedBox(height: AppSpacing.xl),
-        ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
         TextButton(
           onPressed: () => context.go('/home'),
           child: Text(
@@ -199,12 +197,14 @@ final class _ActionButton extends StatefulWidget {
   final String label;
   final IconData icon;
   final bool isPrimary;
+  final bool isLoading;
   final VoidCallback onTap;
 
   const _ActionButton({
     required this.label,
     required this.icon,
     this.isPrimary = false,
+    this.isLoading = false,
     required this.onTap,
   });
 
@@ -217,9 +217,11 @@ final class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = widget.isLoading;
+
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
+      onTapDown: isLoading ? null : (_) => setState(() => _isPressed = true),
+      onTapUp: isLoading ? null : (_) {
         setState(() => _isPressed = false);
         widget.onTap.call();
       },
@@ -242,26 +244,37 @@ final class _ActionButtonState extends State<_ActionButton> {
                     width: 0.5,
                   ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                widget.icon,
-                size: 18,
-                color: widget.isPrimary
-                    ? AppColors.onPrimary
-                    : AppColors.textPrimary,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                widget.label,
-                style: AppTextStyles.button.copyWith(
-                  color: widget.isPrimary
-                      ? AppColors.onPrimary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ],
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.onPrimary,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        widget.icon,
+                        size: 18,
+                        color: widget.isPrimary
+                            ? AppColors.onPrimary
+                            : AppColors.textPrimary,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        widget.label,
+                        style: AppTextStyles.button.copyWith(
+                          color: widget.isPrimary
+                              ? AppColors.onPrimary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
