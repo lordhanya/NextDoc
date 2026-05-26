@@ -23,12 +23,14 @@ final class SuccessScreen extends StatelessWidget {
     String fileName = 'document.pdf';
     int fileSize = 0;
     int pageCount = 0;
+    String toolName = '';
 
     if (extra is Map) {
       filePath = (extra['filePath'] as String?) ?? '';
       fileName = (extra['fileName'] as String?) ?? 'document.pdf';
       fileSize = (extra['fileSize'] as int?) ?? 0;
       pageCount = (extra['pageCount'] as int?) ?? 0;
+      toolName = (extra['toolName'] as String?) ?? '';
     }
 
     return Scaffold(
@@ -44,7 +46,11 @@ final class SuccessScreen extends StatelessWidget {
               Text('Complete!', style: AppTextStyles.headline),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                filePath.isNotEmpty ? 'JPG to PDF' : 'PDF Tool',
+                toolName.isNotEmpty
+                    ? toolName
+                    : filePath.isNotEmpty
+                        ? 'JPG to PDF'
+                        : 'PDF Tool',
                 style: AppTextStyles.bodySmall,
               ),
               const Spacer(),

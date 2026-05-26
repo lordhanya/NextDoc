@@ -11,6 +11,7 @@ import '../../../core/database/recent_file_entity.dart';
 import '../../../core/models/selected_file_model.dart';
 import '../../../core/providers/recent_files_provider.dart';
 import '../../../core/services/image_to_pdf_service.dart';
+import '../../../core/services/merge_pdf_service.dart';
 import '../../../core/services/task_service.dart';
 import '../../../core/theme/typography.dart';
 
@@ -24,6 +25,7 @@ final class ProcessingScreen extends ConsumerStatefulWidget {
 final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   final _taskService = TaskService();
   final _imageToPdfService = ImageToPdfService();
+  final _mergeService = MergePdfService();
   StreamSubscription<TaskProgress>? _taskSubscription;
   StreamSubscription<double>? _realSubscription;
   TaskProgress _taskProgress = const TaskProgress();
@@ -31,7 +33,9 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   SelectedFileModel? _fileData;
   bool _dataExtracted = false;
   bool _isImageToPdf = false;
+  bool _isMerge = false;
   List<String> _imagePaths = [];
+  List<String> _mergePaths = [];
 
   @override
   void initState() {
@@ -58,6 +62,12 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         _fileName = extra['fileName'] as String? ?? 'NextDoc_output.pdf';
         return;
       }
+      if (type == 'merge') {
+        _isMerge = true;
+        _mergePaths = List<String>.from(extra['paths'] as List);
+        _fileName = extra['fileName'] as String? ?? 'Merged.pdf';
+        return;
+      }
     }
     if (extra is SelectedFileModel) {
       _fileData = extra;
@@ -68,6 +78,8 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   Future<void> _startProcessing() async {
     if (_isImageToPdf && _imagePaths.isNotEmpty) {
       _startRealConversion();
+    } else if (_isMerge && _mergePaths.isNotEmpty) {
+      _startRealMerge();
     } else {
       _startFakeTask();
     }
@@ -155,6 +167,92 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     });
   }
 
+  Future<void> _startRealMerge() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final outputPath = '${dir.path}/$_fileName';
+
+      await _mergeService.mergePdfs(
+        inputPaths: _mergePaths,
+        outputPath: outputPath,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _taskProgress = TaskProgress(
+              progress: progress,
+              statusText: _mergeStatusText(progress),
+              status: TaskStatus.running,
+            );
+          });
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = const TaskProgress(
+          progress: 1.0,
+          statusText: 'Complete',
+          status: TaskStatus.completed,
+        );
+      });
+      await _onMergeComplete(outputPath);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = TaskProgress(
+          progress: 0,
+          statusText: 'Failed: ${e.toString()}',
+          status: TaskStatus.failed,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Merge failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  String _mergeStatusText(double progress) {
+    if (progress < 0.2) return 'Reading PDF files...';
+    if (progress < 0.5) return 'Merging pages...';
+    if (progress < 0.8) return 'Building document...';
+    if (progress < 1.0) return 'Saving...';
+    return 'Complete!';
+  }
+
+  Future<void> _onMergeComplete(String outputPath) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    final file = File(outputPath);
+    final fileSize = await file.length();
+    final pdfService = ref.read(pdfServiceProvider);
+    final metadata = await pdfService.getMetadata(outputPath);
+    final pageCount = metadata?.pageCount ?? 0;
+
+    final isarService = IsarService.instance;
+    await isarService.saveRecentFile(RecentFileEntity(
+      fileName: _fileName,
+      filePath: outputPath,
+      fileSize: fileSize,
+      fileType: 'pdf',
+      createdAt: DateTime.now(),
+      pageCount: pageCount,
+    ));
+
+    if (!mounted) return;
+    refreshRecentFiles(ref);
+    if (!mounted) return;
+
+    context.pushReplacement('/success', extra: {
+      'type': 'merge',
+      'toolName': 'PDF Merge',
+      'filePath': outputPath,
+      'fileName': _fileName,
+      'fileSize': fileSize,
+      'pageCount': pageCount,
+    });
+  }
+
   Future<void> _startFakeTask() async {
     _taskSubscription = _taskService.runFakeTask(label: _fileName).listen(
       (progress) {
@@ -200,6 +298,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     _taskService.dispose();
     _taskSubscription?.cancel();
     _realSubscription?.cancel();
+    _mergeService.cancel();
     super.dispose();
   }
 
@@ -247,6 +346,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
                   TextButton.icon(
                     onPressed: () {
                       _taskService.cancel();
+                      _mergeService.cancel();
                       if (mounted) context.pop();
                     },
                     icon: const Icon(Icons.close_rounded, size: 18),
