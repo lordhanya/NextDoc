@@ -9,10 +9,15 @@ import '../constants/app_spacing.dart';
 import '../database/recent_file_entity.dart';
 import '../providers/recent_files_provider.dart';
 import '../providers/search_provider.dart';
+import '../services/file_action_service.dart';
+import '../services/file_management_service.dart';
 import '../theme/typography.dart';
+import 'delete_confirm_dialog.dart';
 import 'empty_state_widget.dart';
+import 'file_action_sheet.dart';
 import 'glass_card.dart';
 import 'pdf_thumbnail_card.dart';
+import 'rename_dialog.dart';
 import 'section_title.dart';
 
 enum RecentFilesDisplayMode { list, grid }
@@ -173,6 +178,78 @@ final class _RecentFileRow extends ConsumerWidget {
     required this.query,
   });
 
+  void _showFileActions(BuildContext context, WidgetRef ref) {
+    showFileActionSheet(
+      context: context,
+      fileName: file.fileName,
+      filePath: file.filePath,
+      fileSize: file.fileSize,
+      pageCount: file.pageCount > 0 ? file.pageCount : 1,
+      onOpen: () => context.push(
+        '/pdf-detail',
+        extra: {
+          'filePath': file.filePath,
+          'fileName': file.fileName,
+          'fileSize': file.fileSize,
+          'pageCount': file.pageCount > 0 ? file.pageCount : 1,
+          'heroTag': 'pdf_list_${file.id}',
+        },
+      ),
+      onShare: () => FileActionService.sharePdf(context, file.filePath, file.fileName),
+      onRename: () => _handleRename(context, ref),
+      onDuplicate: () => _handleDuplicate(context, ref),
+      onDelete: () => _handleDelete(context, ref),
+    );
+  }
+
+  Future<void> _handleRename(BuildContext context, WidgetRef ref) async {
+    final result = await showRenameDialog(
+      context: context,
+      currentName: file.fileName,
+      filePath: file.filePath,
+    );
+    if (result == true) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File renamed successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDuplicate(BuildContext context, WidgetRef ref) async {
+    final r = await FileManagementService.duplicatePdf(file.filePath);
+    if (r.result == FileManagementResult.success) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File duplicated successfully')),
+        );
+      }
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to duplicate file')),
+      );
+    }
+  }
+
+  Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDeleteConfirmDialog(
+      context: context,
+      fileName: file.fileName,
+      filePath: file.filePath,
+    );
+    if (confirmed) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File deleted')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GlassCard(
@@ -230,17 +307,35 @@ final class _RecentFileRow extends ConsumerWidget {
             ),
           ),
           if (file.pageCount > 0)
-            Text(
-              '${file.pageCount} pg',
-              style: AppTextStyles.label,
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: Text(
+                '${file.pageCount} pg',
+                style: AppTextStyles.label,
+              ),
             ),
+          GestureDetector(
+            onTap: () => _showFileActions(context, ref),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: AppColors.cardVariant,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const Icon(
+                LucideIcons.ellipsis,
+                size: 18,
+                color: AppColors.textHint,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-final class _FileCard extends StatelessWidget {
+final class _FileCard extends ConsumerWidget {
   final RecentFileEntity file;
   final String heroTag;
   final Uint8List? thumbnailBytes;
@@ -259,16 +354,14 @@ final class _FileCard extends StatelessWidget {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return PdfThumbnailCard(
-      heroTag: heroTag,
-      thumbnailBytes: thumbnailBytes,
+  void _showFileActions(BuildContext context, WidgetRef ref) {
+    showFileActionSheet(
+      context: context,
       fileName: file.fileName,
-      fileSize: _formattedSize(file.fileSize),
+      filePath: file.filePath,
+      fileSize: file.fileSize,
       pageCount: file.pageCount > 0 ? file.pageCount : 1,
-      query: query,
-      onTap: () => context.push(
+      onOpen: () => context.push(
         '/pdf-detail',
         extra: {
           'filePath': file.filePath,
@@ -277,6 +370,83 @@ final class _FileCard extends StatelessWidget {
           'pageCount': file.pageCount > 0 ? file.pageCount : 1,
           'heroTag': heroTag,
         },
+      ),
+      onShare: () => FileActionService.sharePdf(context, file.filePath, file.fileName),
+      onRename: () => _handleRename(context, ref),
+      onDuplicate: () => _handleDuplicate(context, ref),
+      onDelete: () => _handleDelete(context, ref),
+    );
+  }
+
+  Future<void> _handleRename(BuildContext context, WidgetRef ref) async {
+    final result = await showRenameDialog(
+      context: context,
+      currentName: file.fileName,
+      filePath: file.filePath,
+    );
+    if (result == true) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File renamed successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDuplicate(BuildContext context, WidgetRef ref) async {
+    final r = await FileManagementService.duplicatePdf(file.filePath);
+    if (r.result == FileManagementResult.success) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File duplicated successfully')),
+        );
+      }
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to duplicate file')),
+      );
+    }
+  }
+
+  Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDeleteConfirmDialog(
+      context: context,
+      fileName: file.fileName,
+      filePath: file.filePath,
+    );
+    if (confirmed) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File deleted')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onLongPress: () => _showFileActions(context, ref),
+      child: PdfThumbnailCard(
+        heroTag: heroTag,
+        thumbnailBytes: thumbnailBytes,
+        fileName: file.fileName,
+        fileSize: _formattedSize(file.fileSize),
+        pageCount: file.pageCount > 0 ? file.pageCount : 1,
+        query: query,
+        onTap: () => context.push(
+          '/pdf-detail',
+          extra: {
+            'filePath': file.filePath,
+            'fileName': file.fileName,
+            'fileSize': file.fileSize,
+            'pageCount': file.pageCount > 0 ? file.pageCount : 1,
+            'heroTag': heroTag,
+          },
+        ),
       ),
     );
   }

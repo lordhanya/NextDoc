@@ -1,12 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
-import '../../core/theme/typography.dart';
+import '../../core/providers/recent_files_provider.dart';
 import '../../core/services/file_action_service.dart';
+import '../../core/services/file_management_service.dart';
+import '../../core/theme/typography.dart';
+import '../../core/widgets/delete_confirm_dialog.dart';
+import '../../core/widgets/file_action_sheet.dart';
+import '../../core/widgets/rename_dialog.dart';
 
 final class PdfDetailScreen extends StatelessWidget {
   final String filePath;
@@ -45,6 +51,17 @@ final class PdfDetailScreen extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          Consumer(
+            builder: (context, ref, _) => _MoreMenuButton(
+              filePath: filePath,
+              fileName: fileName,
+              fileSize: fileSize,
+              pageCount: pageCount,
+              ref: ref,
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -163,6 +180,95 @@ final class PdfDetailScreen extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
+}
+
+final class _MoreMenuButton extends StatelessWidget {
+  final String filePath;
+  final String fileName;
+  final int fileSize;
+  final int pageCount;
+  final WidgetRef ref;
+
+  const _MoreMenuButton({
+    required this.filePath,
+    required this.fileName,
+    required this.fileSize,
+    required this.pageCount,
+    required this.ref,
+  });
+
+  void _showActions(BuildContext context) {
+    showFileActionSheet(
+      context: context,
+      fileName: fileName,
+      filePath: filePath,
+      fileSize: fileSize,
+      pageCount: pageCount > 0 ? pageCount : 1,
+      showOpen: false,
+      showShare: false,
+      onRename: () => _handleRename(context),
+      onDuplicate: () => _handleDuplicate(context),
+      onDelete: () => _handleDelete(context),
+    );
+  }
+
+  Future<void> _handleRename(BuildContext context) async {
+    final result = await showRenameDialog(
+      context: context,
+      currentName: fileName,
+      filePath: filePath,
+    );
+    if (result == true) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File renamed successfully')),
+        );
+        context.pop();
+      }
+    }
+  }
+
+  Future<void> _handleDuplicate(BuildContext context) async {
+    final r = await FileManagementService.duplicatePdf(filePath);
+    if (r.result == FileManagementResult.success) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File duplicated successfully')),
+        );
+      }
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to duplicate file')),
+      );
+    }
+  }
+
+  Future<void> _handleDelete(BuildContext context) async {
+    final confirmed = await showDeleteConfirmDialog(
+      context: context,
+      fileName: fileName,
+      filePath: filePath,
+    );
+    if (confirmed) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File deleted')),
+        );
+        context.pop();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(LucideIcons.ellipsis_vertical, color: AppColors.textHint),
+      onPressed: () => _showActions(context),
+    );
   }
 }
 
