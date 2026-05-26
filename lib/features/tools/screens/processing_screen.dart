@@ -13,6 +13,7 @@ import '../../../core/providers/recent_files_provider.dart';
 import '../../../core/services/compress_pdf_service.dart';
 import '../../../core/services/image_to_pdf_service.dart';
 import '../../../core/services/merge_pdf_service.dart';
+import '../../../core/services/split_pdf_service.dart';
 import '../../../core/services/task_service.dart';
 import '../../../core/theme/typography.dart';
 
@@ -28,6 +29,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   final _imageToPdfService = ImageToPdfService();
   final _mergeService = MergePdfService();
   final _compressService = CompressPdfService();
+  final _splitService = SplitPdfService();
   StreamSubscription<TaskProgress>? _taskSubscription;
   StreamSubscription<double>? _realSubscription;
   TaskProgress _taskProgress = const TaskProgress();
@@ -37,12 +39,16 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   bool _isImageToPdf = false;
   bool _isMerge = false;
   bool _isCompress = false;
+  bool _isSplit = false;
   List<String> _imagePaths = [];
   List<String> _mergePaths = [];
   String? _compressPath;
   CompressionLevel _compressionLevel = CompressionLevel.medium;
   int _originalSize = 0;
   int? _pageCount;
+  String? _splitPath;
+  List<int> _selectedPages = [];
+  SplitMode _splitMode = SplitMode.extract;
 
   @override
   void initState() {
@@ -88,6 +94,18 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         );
         return;
       }
+      if (type == 'split') {
+        _isSplit = true;
+        _splitPath = extra['path'] as String?;
+        _fileName = extra['fileName'] as String? ?? 'document.pdf';
+        _selectedPages = List<int>.from(extra['selectedPages'] as List);
+        final modeName = extra['splitMode'] as String? ?? 'extract';
+        _splitMode = SplitMode.values.firstWhere(
+          (e) => e.name == modeName,
+          orElse: () => SplitMode.extract,
+        );
+        return;
+      }
     }
     if (extra is SelectedFileModel) {
       _fileData = extra;
@@ -102,6 +120,8 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       _startRealMerge();
     } else if (_isCompress && _compressPath != null) {
       _startRealCompress();
+    } else if (_isSplit && _splitPath != null) {
+      _startRealSplit();
     } else {
       _startFakeTask();
     }
@@ -360,6 +380,99 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     });
   }
 
+  SplitResult? _splitResult;
+
+  Future<void> _startRealSplit() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+
+      final result = await _splitService.splitPdf(
+        inputPath: _splitPath!,
+        outputDir: dir.path,
+        selectedPageIndices: _selectedPages,
+        mode: _splitMode,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _taskProgress = TaskProgress(
+              progress: progress,
+              statusText: _splitStatusText(progress),
+              status: TaskStatus.running,
+            );
+          });
+        },
+      );
+      _splitResult = result;
+
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = const TaskProgress(
+          progress: 1.0,
+          statusText: 'Complete',
+          status: TaskStatus.completed,
+        );
+      });
+      await _onSplitComplete();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = TaskProgress(
+          progress: 0,
+          statusText: 'Failed: ${e.toString()}',
+          status: TaskStatus.failed,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Split failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  String _splitStatusText(double progress) {
+    if (progress < 0.2) return 'Reading PDF...';
+    if (progress < 0.5) return 'Rendering pages...';
+    if (progress < 0.8) return 'Building PDF${_splitMode == SplitMode.splitAll ? "s" : ""}...';
+    if (progress < 1.0) return 'Saving...';
+    return 'Complete!';
+  }
+
+  Future<void> _onSplitComplete() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    final result = _splitResult;
+    final isarService = IsarService.instance;
+
+    if (result != null && result.files.isNotEmpty) {
+      for (final file in result.files) {
+        await isarService.saveRecentFile(RecentFileEntity(
+          fileName: file.fileName,
+          filePath: file.filePath,
+          fileSize: file.fileSize,
+          fileType: 'pdf',
+          createdAt: DateTime.now(),
+          pageCount: file.pageCount,
+        ));
+      }
+    }
+
+    if (!mounted) return;
+    refreshRecentFiles(ref);
+    if (!mounted) return;
+
+    final firstFile = result?.files.isNotEmpty == true ? result!.files.first : null;
+
+    context.pushReplacement('/success', extra: {
+      'type': 'split',
+      'toolName': 'PDF Split',
+      'filePath': firstFile?.filePath ?? _splitPath ?? '',
+      'fileName': firstFile?.fileName ?? _fileName,
+      'fileSize': result?.totalSize ?? 0,
+      'fileCount': result?.fileCount ?? 0,
+      'pageCount': result?.totalPages ?? _selectedPages.length,
+    });
+  }
+
   Future<void> _startFakeTask() async {
     _taskSubscription = _taskService.runFakeTask(label: _fileName).listen(
       (progress) {
@@ -407,6 +520,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     _realSubscription?.cancel();
     _mergeService.cancel();
     _compressService.cancel();
+    _splitService.cancel();
     super.dispose();
   }
 
@@ -456,6 +570,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
                       _taskService.cancel();
                       _mergeService.cancel();
                       _compressService.cancel();
+                      _splitService.cancel();
                       if (mounted) context.pop();
                     },
                     icon: const Icon(Icons.close_rounded, size: 18),

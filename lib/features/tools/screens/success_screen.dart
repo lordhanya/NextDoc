@@ -25,6 +25,7 @@ final class SuccessScreen extends StatelessWidget {
     int pageCount = 0;
     String toolName = '';
     int originalSize = 0;
+    int fileCount = 0;
 
     if (extra is Map) {
       filePath = (extra['filePath'] as String?) ?? '';
@@ -33,6 +34,7 @@ final class SuccessScreen extends StatelessWidget {
       pageCount = (extra['pageCount'] as int?) ?? 0;
       toolName = (extra['toolName'] as String?) ?? '';
       originalSize = (extra['originalSize'] as int?) ?? 0;
+      fileCount = (extra['fileCount'] as int?) ?? 0;
     }
 
     return Scaffold(
@@ -57,7 +59,7 @@ final class SuccessScreen extends StatelessWidget {
               ),
               const Spacer(),
               if (filePath.isNotEmpty)
-                _buildFileInfo(fileName, fileSize, pageCount, originalSize),
+                _buildFileInfo(fileName, fileSize, pageCount, originalSize, fileCount),
               const Spacer(flex: 2),
               _SuccessActions(filePath: filePath, fileName: fileName),
               const SizedBox(height: AppSpacing.lg),
@@ -92,8 +94,10 @@ final class SuccessScreen extends StatelessWidget {
     int fileSize,
     int pageCount,
     int originalSize,
+    int fileCount,
   ) {
     final isCompressed = originalSize > 0;
+    final isSplit = fileCount > 0;
     final savings = isCompressed
         ? ((originalSize - fileSize) / originalSize * 100)
         : 0.0;
@@ -111,25 +115,35 @@ final class SuccessScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _infoRow('File Name', fileName),
-          if (isCompressed) ...[
+          if (isSplit) ...[
+            _infoRow('Files Created', '$fileCount'),
             const SizedBox(height: AppSpacing.md),
-            _infoRow('Original Size', _formattedSize(originalSize)),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          _infoRow(
-            isCompressed ? 'Compressed Size' : 'Size',
-            _formattedSize(fileSize),
-          ),
-          if (isCompressed) ...[
+            _infoRow('Total Pages', '$pageCount'),
+            if (fileSize > 0) ...[
+              const SizedBox(height: AppSpacing.md),
+              _infoRow('Total Size', _formattedSize(fileSize)),
+            ],
+          ] else ...[
+            _infoRow('File Name', fileName),
+            if (isCompressed) ...[
+              const SizedBox(height: AppSpacing.md),
+              _infoRow('Original Size', _formattedSize(originalSize)),
+            ],
             const SizedBox(height: AppSpacing.md),
             _infoRow(
-              'You Saved',
-              '${savings.toStringAsFixed(1)}%',
+              isCompressed ? 'Compressed Size' : 'Size',
+              _formattedSize(fileSize),
             ),
+            if (isCompressed) ...[
+              const SizedBox(height: AppSpacing.md),
+              _infoRow(
+                'You Saved',
+                '${savings.toStringAsFixed(1)}%',
+              ),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            _infoRow('Pages', '$pageCount'),
           ],
-          const SizedBox(height: AppSpacing.md),
-          _infoRow('Pages', '$pageCount'),
         ],
       ),
     );
