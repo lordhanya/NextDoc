@@ -8,6 +8,7 @@ import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 import '../database/recent_file_entity.dart';
 import '../providers/recent_files_provider.dart';
+import '../providers/search_provider.dart';
 import '../theme/typography.dart';
 import 'empty_state_widget.dart';
 import 'glass_card.dart';
@@ -30,7 +31,8 @@ final class RecentFilesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final filesAsync = ref.watch(recentFilesProvider);
+    final filesAsync = ref.watch(filteredRecentFilesProvider);
+    final query = ref.watch(searchQueryProvider);
     final files = filesAsync.valueOrNull ?? [];
 
     return Padding(
@@ -47,7 +49,13 @@ final class RecentFilesSection extends ConsumerWidget {
           SectionTitle(
             title: title ?? 'Recent Files',
           ),
-          if (files.isEmpty)
+          if (files.isEmpty && query.isNotEmpty)
+            EmptyStateWidget(
+              icon: LucideIcons.search,
+              title: 'No matching files found',
+              subtitle: 'No results for "$query"',
+            )
+          else if (files.isEmpty)
             const EmptyStateWidget(
               icon: LucideIcons.file_text,
               title: 'No recent files',
@@ -55,8 +63,8 @@ final class RecentFilesSection extends ConsumerWidget {
             )
           else
             displayMode == RecentFilesDisplayMode.grid
-                ? _RecentFilesGrid(files: files)
-                : _RecentFilesList(files: files),
+                ? _RecentFilesGrid(files: files, query: query)
+                : _RecentFilesList(files: files, query: query),
         ],
       ),
     );
@@ -65,8 +73,9 @@ final class RecentFilesSection extends ConsumerWidget {
 
 final class _RecentFilesGrid extends ConsumerWidget {
   final List<RecentFileEntity> files;
+  final String query;
 
-  const _RecentFilesGrid({required this.files});
+  const _RecentFilesGrid({required this.files, required this.query});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,16 +99,19 @@ final class _RecentFilesGrid extends ConsumerWidget {
             file: file,
             heroTag: heroTag,
             thumbnailBytes: bytes,
+            query: query,
           ),
           loading: () => _FileCard(
             file: file,
             heroTag: heroTag,
             thumbnailBytes: null,
+            query: query,
           ),
           error: (_, _) => _FileCard(
             file: file,
             heroTag: heroTag,
             thumbnailBytes: null,
+            query: query,
           ),
         );
       },
@@ -109,8 +121,9 @@ final class _RecentFilesGrid extends ConsumerWidget {
 
 final class _RecentFilesList extends ConsumerWidget {
   final List<RecentFileEntity> files;
+  final String query;
 
-  const _RecentFilesList({required this.files});
+  const _RecentFilesList({required this.files, required this.query});
 
   String _formattedSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
@@ -140,25 +153,28 @@ final class _RecentFilesList extends ConsumerWidget {
           file: file,
           formattedSize: _formattedSize(file.fileSize),
           formattedDate: _formatDate(file.createdAt),
+          query: query,
         );
       },
     );
   }
 }
 
-final class _RecentFileRow extends StatelessWidget {
+final class _RecentFileRow extends ConsumerWidget {
   final RecentFileEntity file;
   final String formattedSize;
   final String formattedDate;
+  final String query;
 
   const _RecentFileRow({
     required this.file,
     required this.formattedSize,
     required this.formattedDate,
+    required this.query,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       onTap: () => context.push(
@@ -190,9 +206,16 @@ final class _RecentFileRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  file.fileName,
-                  style: AppTextStyles.titleSmall,
+                RichText(
+                  text: highlightText(
+                    file.fileName,
+                    query,
+                    AppTextStyles.titleSmall,
+                    AppTextStyles.titleSmall.copyWith(
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.primary.withAlpha(30),
+                    ),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -221,11 +244,13 @@ final class _FileCard extends StatelessWidget {
   final RecentFileEntity file;
   final String heroTag;
   final Uint8List? thumbnailBytes;
+  final String query;
 
   const _FileCard({
     required this.file,
     required this.heroTag,
     this.thumbnailBytes,
+    required this.query,
   });
 
   String _formattedSize(int bytes) {
@@ -242,6 +267,7 @@ final class _FileCard extends StatelessWidget {
       fileName: file.fileName,
       fileSize: _formattedSize(file.fileSize),
       pageCount: file.pageCount > 0 ? file.pageCount : 1,
+      query: query,
       onTap: () => context.push(
         '/pdf-detail',
         extra: {

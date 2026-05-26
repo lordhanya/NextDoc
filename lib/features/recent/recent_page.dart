@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/theme/typography.dart';
+import '../../core/widgets/custom_search_bar.dart';
+import '../../core/widgets/recent_files_section.dart';
 
 final class RecentPage extends StatelessWidget {
   const RecentPage({super.key});
@@ -9,51 +10,53 @@ final class RecentPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Recent',
-              style: Theme.of(context).textTheme.headlineLarge,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeader()),
+          SliverToBoxAdapter(child: _buildSearchBar()),
+          SliverToBoxAdapter(
+            child: RecentFilesSection(
+              displayMode: RecentFilesDisplayMode.list,
+              title: 'All Recent Files',
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Recently opened documents',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      LucideIcons.history,
-                      size: 64,
-                      color: AppColors.textHint.withAlpha(80),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      'No recent documents',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Documents you open will show up here',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
+        ],
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
+        AppSpacing.screenPadding,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Recent', style: AppTextStyles.headline),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Recently opened documents',
+            style: AppTextStyles.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.xxl,
+        AppSpacing.screenPadding,
+        0,
+      ),
+      child: CustomSearchBar(hintText: 'Search recent files...'),
     );
   }
 }

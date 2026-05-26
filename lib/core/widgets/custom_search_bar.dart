@@ -1,38 +1,86 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
+import '../providers/search_provider.dart';
 import '../theme/typography.dart';
 
-final class CustomSearchBar extends StatelessWidget {
-  final TextEditingController? controller;
-  final ValueChanged<String>? onChanged;
+final class CustomSearchBar extends ConsumerStatefulWidget {
   final String hintText;
 
   const CustomSearchBar({
     super.key,
-    this.controller,
-    this.onChanged,
     this.hintText = 'Search documents...',
   });
+
+  @override
+  ConsumerState<CustomSearchBar> createState() => _CustomSearchBarState();
+}
+
+final class _CustomSearchBarState extends ConsumerState<CustomSearchBar> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+  Timer? _debounce;
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() => _hasFocus = _focusNode.hasFocus);
+  }
+
+  void _onChanged(String value) {
+    setState(() {});
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        ref.read(searchQueryProvider.notifier).state = value;
+      }
+    });
+  }
+
+  void _clear() {
+    _controller.clear();
+    ref.read(searchQueryProvider.notifier).state = '';
+    _focusNode.unfocus();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: _hasFocus
+            ? AppColors.card
+            : AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: AppColors.border.withAlpha(80),
-          width: 0.5,
+          color: _hasFocus
+              ? AppColors.primary.withAlpha(100)
+              : AppColors.border.withAlpha(80),
+          width: _hasFocus ? 1.5 : 0.5,
         ),
       ),
       child: TextField(
-        controller: controller,
-        onChanged: onChanged,
+        controller: _controller,
+        focusNode: _focusNode,
+        onChanged: _onChanged,
         style: AppTextStyles.body,
         decoration: InputDecoration(
-          hintText: hintText,
+          hintText: widget.hintText,
           hintStyle: AppTextStyles.bodySmall,
           prefixIcon: const Padding(
             padding: EdgeInsets.all(AppSpacing.md),
@@ -42,6 +90,19 @@ final class CustomSearchBar extends StatelessWidget {
               color: AppColors.textHint,
             ),
           ),
+          suffixIcon: _controller.text.isNotEmpty
+              ? GestureDetector(
+                  onTap: _clear,
+                  child: const Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: AppColors.textHint,
+                    ),
+                  ),
+                )
+              : null,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,

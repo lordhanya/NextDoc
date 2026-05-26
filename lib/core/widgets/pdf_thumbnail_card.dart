@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
+import '../providers/search_provider.dart';
 import '../theme/typography.dart';
 import 'glass_card.dart';
 
@@ -12,6 +13,7 @@ final class PdfThumbnailCard extends StatelessWidget {
   final String fileName;
   final String fileSize;
   final int pageCount;
+  final String query;
   final VoidCallback? onTap;
 
   const PdfThumbnailCard({
@@ -21,6 +23,7 @@ final class PdfThumbnailCard extends StatelessWidget {
     required this.fileName,
     required this.fileSize,
     required this.pageCount,
+    this.query = '',
     this.onTap,
   });
 
@@ -44,9 +47,16 @@ final class PdfThumbnailCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              fileName,
-              style: AppTextStyles.caption,
+            RichText(
+              text: highlightText(
+                fileName,
+                query,
+                AppTextStyles.caption,
+                AppTextStyles.caption.copyWith(
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.primary.withAlpha(30),
+                ),
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
