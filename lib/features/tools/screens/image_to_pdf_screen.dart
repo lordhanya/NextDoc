@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -315,7 +315,7 @@ final class _ImagePreviewCard extends StatelessWidget {
             IconButton(
               onPressed: onDelete,
               icon: const Icon(
-                LucideIcons.trash2,
+                LucideIcons.trash_2,
                 size: 18,
                 color: AppColors.error,
               ),

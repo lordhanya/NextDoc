@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -145,7 +145,7 @@ final class _MergePdfScreenState extends ConsumerState<MergePdfScreen> {
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                LucideIcons.filePlus,
+                LucideIcons.file_plus,
                 size: 40,
                 color: AppColors.primary,
               ),
@@ -385,7 +385,7 @@ final class _PdfFileCard extends ConsumerWidget {
             IconButton(
               onPressed: onDelete,
               icon: const Icon(
-                LucideIcons.trash2,
+                LucideIcons.trash_2,
                 size: 18,
                 color: AppColors.error,
               ),
@@ -406,7 +406,7 @@ final class _PdfFileCard extends ConsumerWidget {
     return Container(
       color: AppColors.surfaceVariant,
       child: const Icon(
-        LucideIcons.fileText,
+        LucideIcons.file_text,
         size: 24,
         color: AppColors.textHint,
       ),

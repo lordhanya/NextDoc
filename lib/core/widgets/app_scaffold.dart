@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
@@ -83,13 +83,13 @@ final class _FloatingBottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
-                icon: LucideIcons.home,
+                icon: LucideIcons.house,
                 label: 'Home',
                 isSelected: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavItem(
-                icon: LucideIcons.fileText,
+                icon: LucideIcons.file_text,
                 label: 'Recent',
                 isSelected: currentIndex == 1,
                 onTap: () => onTap(1),

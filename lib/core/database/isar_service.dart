@@ -22,7 +22,19 @@ final class IsarService {
   Future<void> saveRecentFile(RecentFileEntity file) async {
     if (_isar == null) return;
     await _isar!.writeTxn(() async {
-      await _isar!.recentFileEntitys.put(file);
+      final existing = await _isar!.recentFileEntitys
+          .where()
+          .filePathEqualTo(file.filePath)
+          .findFirst();
+      if (existing != null) {
+        await _isar!.recentFileEntitys.put(
+          file
+            ..id = existing.id
+            ..createdAt = DateTime.now(),
+        );
+      } else {
+        await _isar!.recentFileEntitys.put(file);
+      }
     });
   }
 

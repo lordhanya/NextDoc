@@ -53,7 +53,21 @@ const RecentFileEntitySchema = CollectionSchema(
   deserialize: _recentFileEntityDeserialize,
   deserializeProp: _recentFileEntityDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'filePath': IndexSchema(
+      id: 2918041768256347220,
+      name: r'filePath',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'filePath',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _recentFileEntityGetId,
@@ -100,9 +114,9 @@ RecentFileEntity _recentFileEntityDeserialize(
     filePath: reader.readString(offsets[2]),
     fileSize: reader.readLong(offsets[3]),
     fileType: reader.readString(offsets[4]),
-    id: id,
     pageCount: reader.readLongOrNull(offsets[5]) ?? 0,
   );
+  object.id = id;
   return object;
 }
 
@@ -218,6 +232,51 @@ extension RecentFileEntityQueryWhere
         upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<RecentFileEntity, RecentFileEntity, QAfterWhereClause>
+      filePathEqualTo(String filePath) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'filePath',
+        value: [filePath],
+      ));
+    });
+  }
+
+  QueryBuilder<RecentFileEntity, RecentFileEntity, QAfterWhereClause>
+      filePathNotEqualTo(String filePath) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'filePath',
+              lower: [],
+              upper: [filePath],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'filePath',
+              lower: [filePath],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'filePath',
+              lower: [filePath],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'filePath',
+              lower: [],
+              upper: [filePath],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }

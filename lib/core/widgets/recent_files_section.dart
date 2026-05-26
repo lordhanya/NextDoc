@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
@@ -49,7 +49,7 @@ final class RecentFilesSection extends ConsumerWidget {
           ),
           if (files.isEmpty)
             const EmptyStateWidget(
-              icon: LucideIcons.fileText,
+              icon: LucideIcons.file_text,
               title: 'No recent files',
               subtitle: 'Files you process will appear here',
             )
@@ -180,7 +180,7 @@ final class _RecentFileRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: const Icon(
-              LucideIcons.fileText,
+              LucideIcons.file_text,
               size: 22,
               color: AppColors.primary,
             ),

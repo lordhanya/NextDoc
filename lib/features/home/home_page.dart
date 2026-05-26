@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/animated_tool_card.dart';
@@ -13,7 +13,7 @@ final class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   static const _quickTools = [
-    (icon: LucideIcons.filePlus, label: 'Merge PDF', route: '/tools/merge'),
+    (icon: LucideIcons.file_plus, label: 'Merge PDF', route: '/tools/merge'),
     (icon: LucideIcons.minimize, label: 'Compress PDF', route: '/tools/compress'),
     (icon: LucideIcons.image, label: 'JPG to PDF', route: '/tools/image-to-pdf'),
     (icon: LucideIcons.scissors, label: 'Split PDF', route: '/tools/split'),

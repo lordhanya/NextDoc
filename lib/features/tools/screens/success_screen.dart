@@ -24,6 +24,7 @@ final class SuccessScreen extends StatelessWidget {
     int fileSize = 0;
     int pageCount = 0;
     String toolName = '';
+    int originalSize = 0;
 
     if (extra is Map) {
       filePath = (extra['filePath'] as String?) ?? '';
@@ -31,6 +32,7 @@ final class SuccessScreen extends StatelessWidget {
       fileSize = (extra['fileSize'] as int?) ?? 0;
       pageCount = (extra['pageCount'] as int?) ?? 0;
       toolName = (extra['toolName'] as String?) ?? '';
+      originalSize = (extra['originalSize'] as int?) ?? 0;
     }
 
     return Scaffold(
@@ -55,7 +57,7 @@ final class SuccessScreen extends StatelessWidget {
               ),
               const Spacer(),
               if (filePath.isNotEmpty)
-                _buildFileInfo(fileName, fileSize, pageCount),
+                _buildFileInfo(fileName, fileSize, pageCount, originalSize),
               const Spacer(flex: 2),
               _SuccessActions(filePath: filePath, fileName: fileName),
               const SizedBox(height: AppSpacing.lg),
@@ -85,7 +87,17 @@ final class SuccessScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFileInfo(String fileName, int fileSize, int pageCount) {
+  Widget _buildFileInfo(
+    String fileName,
+    int fileSize,
+    int pageCount,
+    int originalSize,
+  ) {
+    final isCompressed = originalSize > 0;
+    final savings = isCompressed
+        ? ((originalSize - fileSize) / originalSize * 100)
+        : 0.0;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -100,8 +112,22 @@ final class SuccessScreen extends StatelessWidget {
       child: Column(
         children: [
           _infoRow('File Name', fileName),
+          if (isCompressed) ...[
+            const SizedBox(height: AppSpacing.md),
+            _infoRow('Original Size', _formattedSize(originalSize)),
+          ],
           const SizedBox(height: AppSpacing.md),
-          _infoRow('Size', _formattedSize(fileSize)),
+          _infoRow(
+            isCompressed ? 'Compressed Size' : 'Size',
+            _formattedSize(fileSize),
+          ),
+          if (isCompressed) ...[
+            const SizedBox(height: AppSpacing.md),
+            _infoRow(
+              'You Saved',
+              '${savings.toStringAsFixed(1)}%',
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           _infoRow('Pages', '$pageCount'),
         ],

@@ -8,6 +8,7 @@ final class RecentFileEntity {
 
   late String fileName;
 
+  @Index()
   late String filePath;
 
   late int fileSize;
@@ -19,7 +20,6 @@ final class RecentFileEntity {
   int pageCount;
 
   RecentFileEntity({
-    this.id = -1,
     required this.fileName,
     required this.filePath,
     required this.fileSize,

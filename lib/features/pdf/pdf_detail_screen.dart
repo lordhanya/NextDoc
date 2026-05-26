@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
@@ -42,6 +42,7 @@ final class PdfDetailScreen extends StatelessWidget {
         title: Text(
           fileName,
           style: AppTextStyles.title,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
       ),
@@ -122,7 +123,7 @@ final class PdfDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _infoRow(LucideIcons.fileText, 'File Name', fileName),
+          _infoRow(LucideIcons.file_text, 'File Name', fileName),
           const SizedBox(height: AppSpacing.md),
           _infoRow(LucideIcons.file, 'Size', _formattedSize(fileSize)),
           const SizedBox(height: AppSpacing.md),
@@ -144,14 +145,17 @@ final class PdfDetailScreen extends StatelessWidget {
         Icon(icon, size: 16, color: AppColors.textHint),
         const SizedBox(width: AppSpacing.md),
         Text(label, style: AppTextStyles.caption),
-        const Spacer(),
-        Text(
-          value,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textPrimary,
+        const SizedBox(width: AppSpacing.sm),
+        Flexible(
+          child: Text(
+            value,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -197,7 +201,7 @@ final class _ActionsRowState extends State<_ActionsRow> {
       children: [
         Expanded(
           child: _ActionChip(
-            icon: LucideIcons.share2,
+            icon: LucideIcons.share_2,
             label: 'Share',
             isLoading: _isSharing,
             onTap: _isSharing ? null : _shareFile,

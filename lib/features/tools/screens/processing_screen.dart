@@ -10,6 +10,7 @@ import '../../../core/database/isar_service.dart';
 import '../../../core/database/recent_file_entity.dart';
 import '../../../core/models/selected_file_model.dart';
 import '../../../core/providers/recent_files_provider.dart';
+import '../../../core/services/compress_pdf_service.dart';
 import '../../../core/services/image_to_pdf_service.dart';
 import '../../../core/services/merge_pdf_service.dart';
 import '../../../core/services/task_service.dart';
@@ -26,6 +27,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   final _taskService = TaskService();
   final _imageToPdfService = ImageToPdfService();
   final _mergeService = MergePdfService();
+  final _compressService = CompressPdfService();
   StreamSubscription<TaskProgress>? _taskSubscription;
   StreamSubscription<double>? _realSubscription;
   TaskProgress _taskProgress = const TaskProgress();
@@ -34,8 +36,13 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   bool _dataExtracted = false;
   bool _isImageToPdf = false;
   bool _isMerge = false;
+  bool _isCompress = false;
   List<String> _imagePaths = [];
   List<String> _mergePaths = [];
+  String? _compressPath;
+  CompressionLevel _compressionLevel = CompressionLevel.medium;
+  int _originalSize = 0;
+  int? _pageCount;
 
   @override
   void initState() {
@@ -68,6 +75,19 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         _fileName = extra['fileName'] as String? ?? 'Merged.pdf';
         return;
       }
+      if (type == 'compress') {
+        _isCompress = true;
+        _compressPath = extra['path'] as String?;
+        _fileName = extra['fileName'] as String? ?? 'Compressed.pdf';
+        _originalSize = extra['originalSize'] as int? ?? 0;
+        _pageCount = extra['pageCount'] as int?;
+        final levelName = extra['compressionLevel'] as String? ?? 'medium';
+        _compressionLevel = CompressionLevel.values.firstWhere(
+          (e) => e.name == levelName,
+          orElse: () => CompressionLevel.medium,
+        );
+        return;
+      }
     }
     if (extra is SelectedFileModel) {
       _fileData = extra;
@@ -80,6 +100,8 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       _startRealConversion();
     } else if (_isMerge && _mergePaths.isNotEmpty) {
       _startRealMerge();
+    } else if (_isCompress && _compressPath != null) {
+      _startRealCompress();
     } else {
       _startFakeTask();
     }
@@ -253,6 +275,91 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     });
   }
 
+  Future<void> _startRealCompress() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final outputPath = '${dir.path}/$_fileName';
+
+      await _compressService.compressPdf(
+        inputPath: _compressPath!,
+        outputPath: outputPath,
+        level: _compressionLevel,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _taskProgress = TaskProgress(
+              progress: progress,
+              statusText: _compressStatusText(progress),
+              status: TaskStatus.running,
+            );
+          });
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = const TaskProgress(
+          progress: 1.0,
+          statusText: 'Complete',
+          status: TaskStatus.completed,
+        );
+      });
+      await _onCompressComplete(outputPath);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = TaskProgress(
+          progress: 0,
+          statusText: 'Failed: ${e.toString()}',
+          status: TaskStatus.failed,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Compression failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  String _compressStatusText(double progress) {
+    if (progress < 0.2) return 'Reading PDF...';
+    if (progress < 0.5) return 'Rendering pages...';
+    if (progress < 0.8) return 'Building compressed PDF...';
+    if (progress < 1.0) return 'Saving...';
+    return 'Complete!';
+  }
+
+  Future<void> _onCompressComplete(String outputPath) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    final file = File(outputPath);
+    final compressedSize = await file.length();
+
+    final isarService = IsarService.instance;
+    await isarService.saveRecentFile(RecentFileEntity(
+      fileName: _fileName,
+      filePath: outputPath,
+      fileSize: compressedSize,
+      fileType: 'pdf',
+      createdAt: DateTime.now(),
+      pageCount: _pageCount ?? 0,
+    ));
+
+    if (!mounted) return;
+    refreshRecentFiles(ref);
+    if (!mounted) return;
+
+    context.pushReplacement('/success', extra: {
+      'type': 'compress',
+      'toolName': 'PDF Compress',
+      'filePath': outputPath,
+      'fileName': _fileName,
+      'fileSize': compressedSize,
+      'pageCount': _pageCount ?? 0,
+      'originalSize': _originalSize,
+    });
+  }
+
   Future<void> _startFakeTask() async {
     _taskSubscription = _taskService.runFakeTask(label: _fileName).listen(
       (progress) {
@@ -299,6 +406,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     _taskSubscription?.cancel();
     _realSubscription?.cancel();
     _mergeService.cancel();
+    _compressService.cancel();
     super.dispose();
   }
 
@@ -347,6 +455,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
                     onPressed: () {
                       _taskService.cancel();
                       _mergeService.cancel();
+                      _compressService.cancel();
                       if (mounted) context.pop();
                     },
                     icon: const Icon(Icons.close_rounded, size: 18),
