@@ -11,10 +11,13 @@ import '../../features/tools/screens/split_pdf_screen.dart';
 import '../../features/tools/screens/processing_screen.dart';
 import '../../features/tools/screens/success_screen.dart';
 import '../../features/pdf/pdf_detail_screen.dart';
+import '../../features/welcome/welcome_screen.dart';
 import '../widgets/app_scaffold.dart';
 
 abstract final class AppRouter {
   AppRouter._();
+
+  static bool showWelcome = false;
 
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -46,7 +49,18 @@ abstract final class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
+    redirect: (context, state) {
+      if (showWelcome && state.matchedLocation != '/welcome') return '/welcome';
+      if (!showWelcome && state.matchedLocation == '/welcome') return '/home';
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/welcome',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: WelcomeScreen(),
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) => AppScaffold(child: child),
         routes: [
