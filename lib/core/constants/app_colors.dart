@@ -51,13 +51,22 @@ abstract final class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
 
-  // ── Semantic icon colors ────────────────────────────────────────────
+  // ── Semantic icon colors (tools) ────────────────────────────────────
   static const Color iconMerge = Color(0xFF5B8CFF);
   static const Color iconCompress = Color(0xFFF59E0B);
   static const Color iconSplit = Color(0xFF22C55E);
   static const Color iconImageToPdf = Color(0xFF7C5CFF);
   static const Color iconDelete = Color(0xFFEF4444);
   static const Color iconSettings = Color(0xFF7C5CFF);
+
+  // ── Semantic icon colors (settings categories) ──────────────────────
+  // Muted premium hues for visual scanning by category
+  static const Color settingsAppearance = Color(0xFF7C5CFF);  // purple / indigo
+  static const Color settingsDefaults  = Color(0xFF5B8CFF);  // blue
+  static const Color settingsCompression = Color(0xFFF59E0B); // amber
+  static const Color settingsStorage   = Color(0xFF06B6D4);  // cyan
+  static const Color settingsAbout     = Color(0xFF14B8A6);  // teal
+  static const Color settingsDanger    = Color(0xFFEF4444);  // red
 
   // ── Shimmer ─────────────────────────────────────────────────────────
   static const Color shimmerBase = Color(0xFF1F1F23);

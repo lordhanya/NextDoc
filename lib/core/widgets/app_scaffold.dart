@@ -49,6 +49,10 @@ final class AppScaffold extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Premium Floating Navigation Bar
+// ─────────────────────────────────────────────────────────────────────────────
+
 final class _PremiumNav extends StatelessWidget {
   final int currentIndex;
   final bool isLight;
@@ -78,7 +82,7 @@ final class _PremiumNav extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: borderColor, width: 0.5),
-        boxShadow: DesignTokens.shadowSm,
+        boxShadow: DesignTokens.navShadow(isLight),
       ),
       child: SafeArea(
         top: false,
@@ -126,6 +130,10 @@ final class _PremiumNav extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Navigation Item with elegant active state
+// ─────────────────────────────────────────────────────────────────────────────
+
 final class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -144,6 +152,9 @@ final class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unselectedColor = isLight ? AppColors.lightIconColor : AppColors.darkIconColor;
+    final activeBg = isLight
+        ? AppColors.primary.withAlpha(15)
+        : AppColors.primary.withAlpha(25);
 
     return GestureDetector(
       onTap: onTap,
@@ -156,25 +167,38 @@ final class _NavItem extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withAlpha(25)
-              : Colors.transparent,
+          color: isSelected ? activeBg : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? AppColors.primary : unselectedColor,
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                if (isSelected)
+                  AnimatedContainer(
+                    duration: DesignTokens.durationSlow,
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(15),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? AppColors.primary : unselectedColor,
+                ),
+              ],
             ),
             if (isSelected) ...[
               const SizedBox(width: AppSpacing.xxs),
               Flexible(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,

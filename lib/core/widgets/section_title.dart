@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 import '../theme/typography.dart';
 
@@ -23,7 +24,21 @@ final class SectionTitle extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(title, style: AppTextStyles.title),
+          Row(
+            children: [
+              // Accent accent bar
+              Container(
+                width: 3,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(title, style: AppTextStyles.title),
+            ],
+          ),
           if (actionLabel != null)
             GestureDetector(
               onTap: onActionTap,

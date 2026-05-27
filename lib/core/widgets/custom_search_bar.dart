@@ -64,36 +64,42 @@ final class _CustomSearchBarState extends ConsumerState<CustomSearchBar> {
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
 
-    final bgColor = isLight ? AppColors.lightSurface3 : AppColors.darkSurface2;
+    final bgColor = isLight ? AppColors.lightSurface1 : AppColors.darkSurface1;
     final border = isLight ? AppColors.lightBorder : AppColors.darkBorder;
     final iconColor = isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted;
+    final textColor = isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary;
 
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: _hasFocus
-              ? AppColors.primary.withAlpha(100)
+              ? AppColors.primary.withAlpha(120)
               : border.withAlpha(80),
           width: _hasFocus ? 1.5 : 0.5,
         ),
-        boxShadow: _hasFocus ? DesignTokens.shadowSm : null,
+        boxShadow: _hasFocus
+            ? DesignTokens.searchFocusGlow(isLight)
+            : DesignTokens.shadowSm,
       ),
       child: TextField(
         controller: _controller,
         focusNode: _focusNode,
         onChanged: _onChanged,
-        style: AppTextStyles.body,
+        style: AppTextStyles.body.copyWith(color: textColor),
         decoration: InputDecoration(
           hintText: widget.hintText,
-          hintStyle: AppTextStyles.bodySmall,
+          hintStyle: AppTextStyles.bodySmall.copyWith(
+            color: iconColor,
+            fontStyle: FontStyle.italic,
+          ),
           prefixIcon: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Icon(
               Icons.search_rounded,
               size: 20,
-              color: iconColor,
+              color: _hasFocus ? AppColors.primary : iconColor,
             ),
           ),
           suffixIcon: _controller.text.isNotEmpty
@@ -104,7 +110,7 @@ final class _CustomSearchBarState extends ConsumerState<CustomSearchBar> {
                     child: Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: iconColor,
+                      color: _hasFocus ? AppColors.primary : iconColor,
                     ),
                   ),
                 )

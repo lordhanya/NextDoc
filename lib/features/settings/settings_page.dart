@@ -55,16 +55,36 @@ final class SettingsPage extends ConsumerWidget {
   }
 }
 
-// ── Shared UI Components ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared UI Components
+// ═══════════════════════════════════════════════════════════════════════════
+
+Widget _buildSettingsIcon({
+  required IconData icon,
+  required Color color,
+  double size = 18,
+}) {
+  return Icon(icon, size: size, color: color);
+}
+
+// ── Section header ─────────────────────────────────────────────────────
 
 final class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
+  final Color color;
 
-  const _SectionHeader({required this.icon, required this.title});
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
@@ -74,14 +94,16 @@ final class _SectionHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.primary),
+          _buildSettingsIcon(icon: icon, color: color, size: 20),
           const SizedBox(width: AppSpacing.sm),
-          Text(title, style: AppTextStyles.title),
+          Text(title, style: AppTextStyles.title.copyWith(color: textColor)),
         ],
       ),
     );
   }
 }
+
+// ── Settings card container ─────────────────────────────────────────────
 
 final class _SettingsCard extends StatelessWidget {
   final Widget child;
@@ -112,17 +134,22 @@ final class _SettingsCard extends StatelessWidget {
   }
 }
 
+// ── Settings row with semantic color icon ───────────────────────────────
+
 final class _SettingsRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
   final Widget trailing;
+  final Color semanticColor;
   final bool showDivider;
+
   const _SettingsRow({
     required this.icon,
     required this.title,
     this.subtitle,
     required this.trailing,
+    this.semanticColor = AppColors.primary,
     this.showDivider = true,
   });
 
@@ -130,8 +157,9 @@ final class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final dividerColor = isLight ? AppColors.lightDivider : AppColors.darkDivider;
-    final accentColor = AppColors.primary;
-    final iconBg = accentColor.withAlpha(20);
+    final textColor = isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary;
+    final subtitleColor = isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary;
+    final iconBg = semanticColor.withAlpha(isLight ? 12 : 15);
 
     return Column(
       children: [
@@ -143,22 +171,22 @@ final class _SettingsRow extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                child: Icon(icon, size: 18, color: accentColor),
+                child: Icon(icon, size: 18, color: semanticColor),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AppTextStyles.body),
+                    Text(title, style: AppTextStyles.body.copyWith(color: textColor)),
                     if (subtitle != null) ...[
                       const SizedBox(height: AppSpacing.xxs),
-                      Text(subtitle!, style: AppTextStyles.caption),
+                      Text(subtitle!, style: AppTextStyles.caption.copyWith(color: subtitleColor)),
                     ],
                   ],
                 ),
@@ -172,13 +200,15 @@ final class _SettingsRow extends StatelessWidget {
           Divider(
             color: dividerColor,
             height: 1,
-            indent: AppSpacing.lg + 18 + AppSpacing.sm * 2 + AppSpacing.md,
+            indent: AppSpacing.lg + 30 + AppSpacing.md,
             endIndent: AppSpacing.lg,
           ),
       ],
     );
   }
 }
+
+// ── Dropdown container ──────────────────────────────────────────────────
 
 final class _DropdownContainer extends StatelessWidget {
   final Widget child;
@@ -239,7 +269,9 @@ Widget _buildStyledDropdown<T>({
   );
 }
 
-// ── Appearance ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// Appearance — Purple / Indigo
+// ═══════════════════════════════════════════════════════════════════════════
 
 final class _AppearanceSection extends ConsumerWidget {
   const _AppearanceSection();
@@ -251,13 +283,18 @@ final class _AppearanceSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(icon: LucideIcons.palette, title: 'Appearance'),
+        _SectionHeader(
+          icon: LucideIcons.palette,
+          title: 'Appearance',
+          color: AppColors.settingsAppearance,
+        ),
         _SettingsCard(
           child: _SettingsRow(
             icon: LucideIcons.sun_moon,
             title: 'Theme',
             subtitle: _themeLabel(themeMode),
             trailing: const _ThemeDropdown(),
+            semanticColor: AppColors.settingsAppearance,
             showDivider: false,
           ),
         ),
@@ -294,7 +331,9 @@ final class _ThemeDropdown extends ConsumerWidget {
   }
 }
 
-// ── Defaults ────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// Defaults — Blue
+// ═══════════════════════════════════════════════════════════════════════════
 
 final class _DefaultsSection extends ConsumerWidget {
   const _DefaultsSection();
@@ -304,7 +343,11 @@ final class _DefaultsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(icon: LucideIcons.sliders_horizontal, title: 'Defaults'),
+        _SectionHeader(
+          icon: LucideIcons.sliders_horizontal,
+          title: 'Defaults',
+          color: AppColors.settingsDefaults,
+        ),
         _SettingsCard(
           child: Column(
             children: [
@@ -314,6 +357,7 @@ final class _DefaultsSection extends ConsumerWidget {
                 title: 'Export Quality',
                 subtitle: 'Default quality for image to PDF conversion',
                 trailing: _ExportQualityDropdown(),
+                semanticColor: AppColors.settingsDefaults,
                 showDivider: false,
               ),
             ],
@@ -335,6 +379,7 @@ final class _CompressionRow extends ConsumerWidget {
       title: 'Compression Level',
       subtitle: 'Default compression for PDF compress tool',
       trailing: _CompressionDropdown(),
+      semanticColor: AppColors.settingsCompression,
     );
   }
 }
@@ -379,7 +424,9 @@ final class _ExportQualityDropdown extends ConsumerWidget {
   }
 }
 
-// ── Storage ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// Storage — Cyan
+// ═══════════════════════════════════════════════════════════════════════════
 
 final class _StorageSection extends ConsumerWidget {
   const _StorageSection();
@@ -389,7 +436,11 @@ final class _StorageSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(icon: LucideIcons.database, title: 'Storage'),
+        _SectionHeader(
+          icon: LucideIcons.database,
+          title: 'Storage',
+          color: AppColors.settingsStorage,
+        ),
         _SettingsCard(
           child: const _CacheRow(),
         ),
@@ -555,12 +606,15 @@ final class _CacheRowState extends ConsumerState<_CacheRow> {
           ),
         ),
       ),
+      semanticColor: AppColors.settingsDanger,
       showDivider: false,
     );
   }
 }
 
-// ── About ───────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// About — Teal
+// ═══════════════════════════════════════════════════════════════════════════
 
 final class _AboutSection extends StatelessWidget {
   const _AboutSection();
@@ -570,7 +624,11 @@ final class _AboutSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(icon: LucideIcons.info, title: 'About'),
+        _SectionHeader(
+          icon: LucideIcons.info,
+          title: 'About',
+          color: AppColors.settingsAbout,
+        ),
         _SettingsCard(
           child: Column(
             children: [
@@ -578,26 +636,31 @@ final class _AboutSection extends StatelessWidget {
                 icon: LucideIcons.app_window,
                 title: 'App Name',
                 trailing: _AboutValue('NextDoc'),
+                semanticColor: AppColors.settingsAbout,
               ),
               const _SettingsRow(
                 icon: LucideIcons.tag,
                 title: 'Version',
                 trailing: _AboutValue('1.0.0'),
+                semanticColor: AppColors.settingsAbout,
               ),
               const _SettingsRow(
                 icon: LucideIcons.hash,
                 title: 'Build Number',
                 trailing: _AboutValue('1'),
+                semanticColor: AppColors.settingsAbout,
               ),
               const _SettingsRow(
                 icon: LucideIcons.user,
                 title: 'Developer',
                 trailing: _AboutValue('NextDoc Team'),
+                semanticColor: AppColors.settingsAbout,
               ),
               const _SettingsRow(
                 icon: LucideIcons.code,
                 title: 'Flutter Version',
                 trailing: _AboutValue('3.44.0'),
+                semanticColor: AppColors.settingsAbout,
                 showDivider: false,
               ),
             ],
