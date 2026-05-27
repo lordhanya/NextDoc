@@ -38,8 +38,9 @@ final class PdfDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.lightBackground : AppColors.darkBackground,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -69,9 +70,9 @@ final class PdfDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildPreview(context),
+              _buildPreview(context, isLight),
               const SizedBox(height: AppSpacing.xxl),
-              _buildInfoSection(context),
+              _buildInfoSection(context, isLight),
               const SizedBox(height: AppSpacing.xxl),
               _ActionsRow(filePath: filePath, fileName: fileName),
             ],
@@ -81,7 +82,7 @@ final class PdfDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPreview(BuildContext context) {
+  Widget _buildPreview(BuildContext context, bool isLight) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Hero(
@@ -89,21 +90,21 @@ final class PdfDetailScreen extends StatelessWidget {
         child: Container(
           width: double.infinity,
           height: 280,
-          color: AppColors.surfaceVariant,
-          child: _buildPageView(),
+          color: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
+          child: _buildPageView(isLight),
         ),
       ),
     );
   }
 
-  Widget _buildPageView() {
+  Widget _buildPageView(bool isLight) {
     return PageView.builder(
       itemCount: pageCount.clamp(1, 10),
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Column(
@@ -112,7 +113,7 @@ final class PdfDetailScreen extends StatelessWidget {
               Icon(
                 Icons.picture_as_pdf_rounded,
                 size: 64,
-                color: AppColors.textHint.withAlpha(80),
+                color: (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(80),
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
@@ -126,40 +127,41 @@ final class PdfDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoSection(BuildContext context) {
+  Widget _buildInfoSection(BuildContext context, bool isLight) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: AppColors.border.withAlpha(60),
+          color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
           width: 0.5,
         ),
       ),
       child: Column(
         children: [
-          _infoRow(LucideIcons.file_text, 'File Name', fileName),
+          _infoRow(LucideIcons.file_text, 'File Name', fileName, isLight),
           const SizedBox(height: AppSpacing.md),
-          _infoRow(LucideIcons.file, 'Size', _formattedSize(fileSize)),
+          _infoRow(LucideIcons.file, 'Size', _formattedSize(fileSize), isLight),
           const SizedBox(height: AppSpacing.md),
-          _infoRow(LucideIcons.layers, 'Pages', '$pageCount'),
+          _infoRow(LucideIcons.layers, 'Pages', '$pageCount', isLight),
           const SizedBox(height: AppSpacing.md),
           _infoRow(
             LucideIcons.calendar,
             'Created',
             _formatDate(File(filePath).statSync().modified),
+            isLight,
           ),
         ],
       ),
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
+  Widget _infoRow(IconData icon, String label, String value, bool isLight) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppColors.textHint),
+        Icon(icon, size: 16, color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted),
         const SizedBox(width: AppSpacing.md),
         Text(label, style: AppTextStyles.caption),
         const SizedBox(width: AppSpacing.sm),
@@ -167,7 +169,7 @@ final class PdfDetailScreen extends StatelessWidget {
           child: Text(
             value,
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textPrimary,
+              color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -265,8 +267,9 @@ final class _MoreMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return IconButton(
-      icon: const Icon(LucideIcons.ellipsis_vertical, color: AppColors.textHint),
+      icon: Icon(LucideIcons.ellipsis_vertical, color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted),
       onPressed: () => _showActions(context),
     );
   }
@@ -353,6 +356,7 @@ final class _ActionChipState extends State<_ActionChip> {
   @override
   Widget build(BuildContext context) {
     final isLoading = widget.isLoading;
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
     return GestureDetector(
       onTapDown: (isLoading || widget.onTap == null)
@@ -373,12 +377,12 @@ final class _ActionChipState extends State<_ActionChip> {
           decoration: BoxDecoration(
             color: widget.isPrimary
                 ? AppColors.primary
-                : AppColors.card,
+                : (isLight ? AppColors.lightSurface1 : AppColors.darkSurface2),
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: widget.isPrimary
                 ? null
                 : Border.all(
-                    color: AppColors.border.withAlpha(100),
+                    color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(100),
                     width: 0.5,
                   ),
           ),
@@ -400,7 +404,7 @@ final class _ActionChipState extends State<_ActionChip> {
                         size: 18,
                         color: widget.isPrimary
                             ? AppColors.onPrimary
-                            : AppColors.textPrimary,
+                            : (isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
@@ -408,7 +412,7 @@ final class _ActionChipState extends State<_ActionChip> {
                         style: AppTextStyles.button.copyWith(
                           color: widget.isPrimary
                               ? AppColors.onPrimary
-                              : AppColors.textPrimary,
+                              : (isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary),
                         ),
                       ),
                     ],

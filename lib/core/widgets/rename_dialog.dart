@@ -113,8 +113,15 @@ final class _RenameDialogState extends State<_RenameDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final surface = isLight ? AppColors.lightSurface1 : AppColors.darkSurface1;
+    final card = isLight ? AppColors.lightSurface1 : AppColors.darkSurface2;
+    final border = isLight ? AppColors.lightBorder : AppColors.darkBorder;
+    final textHint = isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted;
+    final textSecondary = isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary;
+
     return AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
@@ -152,30 +159,30 @@ final class _RenameDialogState extends State<_RenameDialog> {
               errorText: _errorText,
               suffixText: '.pdf',
               suffixStyle: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textHint,
+                color: textHint,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.error),
+                borderSide: BorderSide(color: AppColors.error),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
                 vertical: AppSpacing.md,
               ),
               filled: true,
-              fillColor: AppColors.card,
+              fillColor: card,
             ),
             onSubmitted: (_) => _submit(),
           ),
@@ -186,7 +193,7 @@ final class _RenameDialogState extends State<_RenameDialog> {
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
+                  foregroundColor: textSecondary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg,
                     vertical: AppSpacing.md,

@@ -27,6 +27,8 @@ final class _UploadDropzoneCardState extends State<UploadDropzoneCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isHovered = true),
       onTapUp: (_) async {
@@ -44,13 +46,13 @@ final class _UploadDropzoneCardState extends State<UploadDropzoneCard> {
         ),
         decoration: BoxDecoration(
           color: _isHovered
-              ? AppColors.cardVariant
-              : AppColors.card,
+              ? (isLight ? AppColors.lightSurface2 : AppColors.darkSurface3)
+              : (isLight ? AppColors.lightSurface1 : AppColors.darkSurface2),
           borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(
             color: _isHovered
                 ? AppColors.primary.withAlpha(80)
-                : AppColors.border.withAlpha(100),
+                : (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(100),
             width: 1,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -64,7 +66,7 @@ final class _UploadDropzoneCardState extends State<UploadDropzoneCard> {
               decoration: BoxDecoration(
                 color: _isHovered
                     ? AppColors.primaryContainer
-                    : AppColors.surfaceVariant,
+                    : (isLight ? AppColors.lightSurface2 : AppColors.darkSurface2),
                 borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
               child: Icon(
@@ -72,7 +74,7 @@ final class _UploadDropzoneCardState extends State<UploadDropzoneCard> {
                 size: 36,
                 color: _isHovered
                     ? AppColors.primary
-                    : AppColors.textSecondary,
+                    : (isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),

@@ -109,9 +109,10 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
   }
 
   void _showModeInfo() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
@@ -130,7 +131,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.xl),
               decoration: BoxDecoration(
-                color: AppColors.textHint.withAlpha(80),
+                color: (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(80),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -169,6 +170,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
   }
 
   Widget _infoRow(String title, String description) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -187,14 +189,14 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textPrimary,
+                color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
                 fontWeight: FontWeight.w600,
               )),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 description,
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
+                  color: isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary,
                   height: 1.4,
                 ),
               ),
@@ -207,13 +209,14 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.lightBackground : AppColors.darkBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back_rounded, color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -239,6 +242,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
   }
 
   Widget _buildPicker() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -250,10 +254,10 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
               horizontal: AppSpacing.xxl,
             ),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
               borderRadius: BorderRadius.circular(AppRadius.xl),
               border: Border.all(
-                color: AppColors.border.withAlpha(60),
+                color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
                 width: 1,
               ),
             ),
@@ -301,6 +305,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
   }
 
   Widget _buildFileHeader() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
@@ -310,7 +315,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
       ),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
@@ -361,6 +366,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
   }
 
   Widget _buildModeSelector() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenPadding,
@@ -384,17 +390,17 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                  color: AppColors.border.withAlpha(60),
+                  color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
                   width: 0.5,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.info,
                 size: 14,
-                color: AppColors.textHint,
+                color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
               ),
             ),
           ),
@@ -444,6 +450,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
   }
 
   Widget _buildBottomBar() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final count = _selectedPages.length;
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -453,10 +460,10 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
         AppSpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface1,
         border: Border(
           top: BorderSide(
-            color: AppColors.border.withAlpha(30),
+            color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(30),
             width: 0.5,
           ),
         ),
@@ -469,9 +476,9 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
             onPressed: count > 0 ? _startSplit : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              disabledBackgroundColor: AppColors.surfaceVariant,
+              disabledBackgroundColor: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
               foregroundColor: AppColors.onPrimary,
-              disabledForegroundColor: AppColors.textHint,
+              disabledForegroundColor: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
@@ -521,6 +528,7 @@ final class _ModeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -530,17 +538,17 @@ final class _ModeChip extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withAlpha(30) : AppColors.card,
+          color: selected ? AppColors.primary.withAlpha(30) : (isLight ? AppColors.lightSurface1 : AppColors.darkSurface2),
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border.withAlpha(60),
+            color: selected ? AppColors.primary : (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
             width: selected ? 1.5 : 0.5,
           ),
         ),
         child: Text(
           label,
           style: AppTextStyles.caption.copyWith(
-            color: selected ? AppColors.primary : AppColors.textSecondary,
+            color: selected ? AppColors.primary : (isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary),
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -560,6 +568,7 @@ final class _SelectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -568,17 +577,17 @@ final class _SelectionButton extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: AppColors.border.withAlpha(60),
+            color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
             width: 0.5,
           ),
         ),
         child: Text(
           label,
           style: AppTextStyles.caption.copyWith(
-            color: AppColors.textSecondary,
+            color: isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary,
           ),
         ),
       ),
@@ -702,6 +711,7 @@ final class _PageTileState extends State<_PageTile> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final showThumbnail = _thumbnail != null;
     final isSelected = widget.isSelected;
 
@@ -715,10 +725,10 @@ final class _PageTileState extends State<_PageTile> {
           decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.primary.withAlpha(15)
-                : AppColors.card,
+                : (isLight ? AppColors.lightSurface1 : AppColors.darkSurface2),
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border.withAlpha(40),
+              color: isSelected ? AppColors.primary : (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(40),
               width: isSelected ? 2 : 0.5,
             ),
             boxShadow: isSelected
@@ -750,15 +760,15 @@ final class _PageTileState extends State<_PageTile> {
                           )
                         else
                           Container(
-                            color: AppColors.surfaceVariant,
+                            color: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
                             child: _loadingThumbnail
-                                ? const Center(
+                                ? Center(
                                     child: SizedBox(
                                       width: 16,
                                       height: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: AppColors.textHint,
+                                        color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
                                       ),
                                     ),
                                   )
@@ -767,7 +777,7 @@ final class _PageTileState extends State<_PageTile> {
                                     size: 28,
                                     color: isSelected
                                         ? AppColors.primary.withAlpha(120)
-                                        : AppColors.textHint.withAlpha(60),
+                                        : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60),
                                   ),
                           ),
                         if (isSelected)
@@ -799,7 +809,7 @@ final class _PageTileState extends State<_PageTile> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary.withAlpha(25)
-                        : AppColors.surfaceVariant.withAlpha(120),
+                        : (isLight ? AppColors.lightSurface2 : AppColors.darkSurface2).withAlpha(120),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
@@ -808,7 +818,7 @@ final class _PageTileState extends State<_PageTile> {
                       fontSize: 10,
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.textSecondary,
+                          : (isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary),
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),

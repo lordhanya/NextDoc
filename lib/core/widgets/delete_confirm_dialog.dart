@@ -55,8 +55,12 @@ final class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final surface = isLight ? AppColors.lightSurface1 : AppColors.darkSurface1;
+    final textSecondary = isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary;
+
     return AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
@@ -96,7 +100,7 @@ final class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                       ? null
                       : () => Navigator.of(context).pop(false),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
+                    foregroundColor: textSecondary,
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.md + 2,
                     ),

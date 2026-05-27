@@ -526,12 +526,13 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final cancelled = _taskProgress.status == TaskStatus.cancelled;
     final failed = _taskProgress.status == TaskStatus.failed;
     final progress = _taskProgress.progress;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.lightBackground : AppColors.darkBackground,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -539,7 +540,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildCircularProgress(),
+                _buildCircularProgress(isLight),
                 const SizedBox(height: AppSpacing.xxxl),
                 Text(
                   failed ? 'Failed' : cancelled ? 'Cancelled' : 'Processing...',
@@ -595,7 +596,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     );
   }
 
-  Widget _buildCircularProgress() {
+  Widget _buildCircularProgress(bool isLight) {
     final progress = _taskProgress.progress;
     final cancelled = _taskProgress.status == TaskStatus.cancelled;
     final failed = _taskProgress.status == TaskStatus.failed;
@@ -613,12 +614,12 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
               value: (cancelled || failed) ? null : progress,
               strokeWidth: 4,
               strokeCap: StrokeCap.round,
-              backgroundColor: AppColors.surfaceVariant,
+              backgroundColor: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
               valueColor: AlwaysStoppedAnimation(
                 failed
                     ? AppColors.error
                     : cancelled
-                        ? AppColors.textHint
+                        ? (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted)
                         : AppColors.primary,
               ),
             ),
@@ -633,7 +634,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
             color: failed
                 ? AppColors.error.withAlpha(180)
                 : cancelled
-                    ? AppColors.textHint.withAlpha(180)
+                    ? (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(180)
                     : AppColors.primary.withAlpha(180),
           ),
         ],

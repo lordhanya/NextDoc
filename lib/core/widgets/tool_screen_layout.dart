@@ -26,8 +26,10 @@ final class ToolScreenLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.lightBackground : AppColors.darkBackground,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),

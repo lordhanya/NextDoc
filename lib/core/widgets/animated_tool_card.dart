@@ -28,6 +28,17 @@ final class _AnimatedToolCardState extends State<AnimatedToolCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    final cardColor = isLight ? AppColors.lightSurface1 : AppColors.darkSurface2;
+    final hoverCard = isLight ? AppColors.lightSurface2 : AppColors.darkSurface3;
+    final borderColor = isLight ? AppColors.lightBorder : AppColors.darkBorder;
+    final iconBg = isLight
+        ? AppColors.lightPrimaryContainer
+        : AppColors.primaryContainer;
+    final defaultIconBg = isLight ? AppColors.lightSurface2 : AppColors.darkSurface2;
+    final iconColor = isLight ? AppColors.lightIconColor : AppColors.darkIconColor;
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isHovered = true),
       onTapUp: (_) {
@@ -40,12 +51,12 @@ final class _AnimatedToolCardState extends State<AnimatedToolCard> {
         curve: Curves.easeOut,
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: _isHovered ? AppColors.cardVariant : AppColors.card,
+          color: _isHovered ? hoverCard : cardColor,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: _isHovered
                 ? AppColors.primary.withAlpha(60)
-                : AppColors.border.withAlpha(60),
+                : borderColor.withAlpha(60),
             width: 0.5,
           ),
         ),
@@ -56,9 +67,7 @@ final class _AnimatedToolCardState extends State<AnimatedToolCard> {
               duration: 200.ms,
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: _isHovered
-                    ? AppColors.primaryContainer
-                    : AppColors.surfaceVariant,
+                color: _isHovered ? iconBg : defaultIconBg,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(
@@ -66,7 +75,7 @@ final class _AnimatedToolCardState extends State<AnimatedToolCard> {
                 size: 24,
                 color: _isHovered
                     ? AppColors.primary
-                    : AppColors.iconColor,
+                    : iconColor,
               ),
             ),
             const SizedBox(height: AppSpacing.md),

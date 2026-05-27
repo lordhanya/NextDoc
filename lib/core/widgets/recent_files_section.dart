@@ -252,6 +252,17 @@ final class _RecentFileRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final threeDotsBg = isLight ? AppColors.lightSurface2 : AppColors.darkSurface3;
+    final threeDotsIcon = isLight ? AppColors.lightIconColor : AppColors.darkTextMuted;
+
+    final defaultTextStyle = DefaultTextStyle.of(context).style;
+    final fileNameStyle = defaultTextStyle.merge(AppTextStyles.titleSmall);
+    final highlightStyle = fileNameStyle.copyWith(
+      color: AppColors.primary,
+      backgroundColor: AppColors.primary.withAlpha(30),
+    );
+
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       onTap: () => context.push(
@@ -287,11 +298,8 @@ final class _RecentFileRow extends ConsumerWidget {
                   text: highlightText(
                     file.fileName,
                     query,
-                    AppTextStyles.titleSmall,
-                    AppTextStyles.titleSmall.copyWith(
-                      color: AppColors.primary,
-                      backgroundColor: AppColors.primary.withAlpha(30),
-                    ),
+                    fileNameStyle,
+                    highlightStyle,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -319,13 +327,13 @@ final class _RecentFileRow extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.xs),
               decoration: BoxDecoration(
-                color: AppColors.cardVariant,
+                color: threeDotsBg,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.ellipsis,
                 size: 18,
-                color: AppColors.textHint,
+                color: threeDotsIcon,
               ),
             ),
           ),

@@ -107,8 +107,9 @@ final class _MergePdfScreenState extends ConsumerState<MergePdfScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.lightBackground : AppColors.darkBackground,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -234,6 +235,7 @@ final class _MergePdfScreenState extends ConsumerState<MergePdfScreen> {
   }
 
   Widget _buildBottomBar() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final pageCount = _files.fold<int>(0, (sum, f) => sum + (f.pageCount ?? 0));
     final enabled = _files.length >= 2;
 
@@ -245,10 +247,10 @@ final class _MergePdfScreenState extends ConsumerState<MergePdfScreen> {
         AppSpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface1,
         border: Border(
           top: BorderSide(
-            color: AppColors.border.withAlpha(60),
+            color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
             width: 0.5,
           ),
         ),
@@ -272,7 +274,7 @@ final class _MergePdfScreenState extends ConsumerState<MergePdfScreen> {
                       height: 4,
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.textHint.withAlpha(80),
+                        color: (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(80),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -334,6 +336,7 @@ final class _PdfFileCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final thumbnailAsync = ref.watch(pdfThumbnailProvider(item.path));
 
     return Padding(
@@ -356,10 +359,10 @@ final class _PdfFileCard extends ConsumerWidget {
                         filterQuality: FilterQuality.medium,
                       );
                     }
-                    return _pdfPlaceholder();
+                    return _pdfPlaceholder(isLight);
                   },
-                  loading: () => _pdfPlaceholder(),
-                  error: (_, _) => _pdfPlaceholder(),
+                  loading: () => _pdfPlaceholder(isLight),
+                  error: (_, _) => _pdfPlaceholder(isLight),
                 ),
               ),
             ),
@@ -391,10 +394,10 @@ final class _PdfFileCard extends ConsumerWidget {
               ),
               visualDensity: VisualDensity.compact,
             ),
-            const Icon(
+            Icon(
               Icons.drag_handle_rounded,
               size: 20,
-              color: AppColors.textHint,
+              color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
             ),
           ],
         ),
@@ -402,13 +405,13 @@ final class _PdfFileCard extends ConsumerWidget {
     );
   }
 
-  Widget _pdfPlaceholder() {
+  Widget _pdfPlaceholder(bool isLight) {
     return Container(
-      color: AppColors.surfaceVariant,
-      child: const Icon(
+      color: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
+      child: Icon(
         LucideIcons.file_text,
         size: 24,
-        color: AppColors.textHint,
+        color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
       ),
     );
   }
@@ -436,6 +439,7 @@ final class _ActionChipState extends State<_ActionChip> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
@@ -452,12 +456,12 @@ final class _ActionChipState extends State<_ActionChip> {
             vertical: AppSpacing.md + 2,
           ),
           decoration: BoxDecoration(
-            color: widget.isPrimary ? AppColors.primary : AppColors.card,
+            color: widget.isPrimary ? AppColors.primary : (isLight ? AppColors.lightSurface1 : AppColors.darkSurface2),
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: widget.isPrimary
                 ? null
                 : Border.all(
-                    color: AppColors.border.withAlpha(100),
+                    color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(100),
                     width: 0.5,
                   ),
           ),
@@ -469,7 +473,7 @@ final class _ActionChipState extends State<_ActionChip> {
                 size: 18,
                 color: widget.isPrimary
                     ? AppColors.onPrimary
-                    : AppColors.textPrimary,
+                    : (isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary),
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
@@ -477,7 +481,7 @@ final class _ActionChipState extends State<_ActionChip> {
                 style: AppTextStyles.button.copyWith(
                   color: widget.isPrimary
                       ? AppColors.onPrimary
-                      : AppColors.textPrimary,
+                      : (isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary),
                 ),
               ),
             ],
@@ -508,8 +512,9 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final effectiveColor =
-        widget.isEnabled ? AppColors.primary : AppColors.textHint.withAlpha(60);
+        widget.isEnabled ? AppColors.primary : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60);
 
     return GestureDetector(
       onTapDown: widget.isEnabled
@@ -537,7 +542,7 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
               style: AppTextStyles.button.copyWith(
                 color: widget.isEnabled
                     ? AppColors.onPrimary
-                    : AppColors.textHint.withAlpha(120),
+                    : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(120),
               ),
               textAlign: TextAlign.center,
               maxLines: 1,

@@ -17,6 +17,10 @@ final class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final hintColor = isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted;
+    final secondaryColor = isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -26,13 +30,13 @@ final class EmptyStateWidget extends StatelessWidget {
             Icon(
               icon,
               size: 56,
-              color: AppColors.textHint.withAlpha(80),
+              color: hintColor.withAlpha(80),
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
               title,
               style: AppTextStyles.titleSmall.copyWith(
-                color: AppColors.textSecondary,
+                color: secondaryColor,
               ),
               textAlign: TextAlign.center,
             ),

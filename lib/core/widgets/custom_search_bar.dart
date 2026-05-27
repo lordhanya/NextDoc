@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
+import '../constants/design_tokens.dart';
 import '../providers/search_provider.dart';
 import '../theme/typography.dart';
 
@@ -61,18 +62,23 @@ final class _CustomSearchBarState extends ConsumerState<CustomSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    final bgColor = isLight ? AppColors.lightSurface3 : AppColors.darkSurface2;
+    final border = isLight ? AppColors.lightBorder : AppColors.darkBorder;
+    final iconColor = isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted;
+
     return Container(
       decoration: BoxDecoration(
-        color: _hasFocus
-            ? AppColors.card
-            : AppColors.surfaceVariant,
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: _hasFocus
               ? AppColors.primary.withAlpha(100)
-              : AppColors.border.withAlpha(80),
+              : border.withAlpha(80),
           width: _hasFocus ? 1.5 : 0.5,
         ),
+        boxShadow: _hasFocus ? DesignTokens.shadowSm : null,
       ),
       child: TextField(
         controller: _controller,
@@ -82,23 +88,23 @@ final class _CustomSearchBarState extends ConsumerState<CustomSearchBar> {
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: AppTextStyles.bodySmall,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Icon(
               Icons.search_rounded,
               size: 20,
-              color: AppColors.textHint,
+              color: iconColor,
             ),
           ),
           suffixIcon: _controller.text.isNotEmpty
               ? GestureDetector(
                   onTap: _clear,
-                  child: const Padding(
-                    padding: EdgeInsets.all(AppSpacing.md),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     child: Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: AppColors.textHint,
+                      color: iconColor,
                     ),
                   ),
                 )

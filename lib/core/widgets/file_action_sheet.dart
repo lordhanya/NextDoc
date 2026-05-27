@@ -71,10 +71,16 @@ final class _FileActionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final surface = isLight ? AppColors.lightSurface1 : AppColors.darkSurface1;
+    final divider = isLight ? AppColors.lightDivider : AppColors.darkDivider;
+    final handleColor = isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted;
+    final textPrimary = isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(AppRadius.xxl),
           topRight: Radius.circular(AppRadius.xxl),
         ),
@@ -90,24 +96,25 @@ final class _FileActionSheet extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildHandle(),
+              _buildHandle(handleColor),
               const SizedBox(height: AppSpacing.sm),
               _buildHeader(),
               const SizedBox(height: AppSpacing.lg),
-              const Divider(color: AppColors.divider, height: 1),
+              Divider(color: divider, height: 1),
               const SizedBox(height: AppSpacing.sm),
-              if (showOpen) _ActionTile(icon: LucideIcons.eye, label: 'Open', onTap: onOpen),
-              if (showShare) _ActionTile(icon: LucideIcons.share_2, label: 'Share', onTap: onShare),
-              _ActionTile(icon: LucideIcons.pencil, label: 'Rename', onTap: onRename),
-              _ActionTile(icon: LucideIcons.copy, label: 'Duplicate', onTap: onDuplicate),
+              if (showOpen) _ActionTile(icon: LucideIcons.eye, label: 'Open', onTap: onOpen, textPrimary: textPrimary),
+              if (showShare) _ActionTile(icon: LucideIcons.share_2, label: 'Share', onTap: onShare, textPrimary: textPrimary),
+              _ActionTile(icon: LucideIcons.pencil, label: 'Rename', onTap: onRename, textPrimary: textPrimary),
+              _ActionTile(icon: LucideIcons.copy, label: 'Duplicate', onTap: onDuplicate, textPrimary: textPrimary),
               const SizedBox(height: AppSpacing.xs),
-              const Divider(color: AppColors.divider, height: 1),
+              Divider(color: divider, height: 1),
               const SizedBox(height: AppSpacing.xs),
               _ActionTile(
                 icon: LucideIcons.trash_2,
                 label: 'Delete',
                 isDestructive: true,
                 onTap: onDelete,
+                textPrimary: textPrimary,
               ),
             ],
           ),
@@ -116,13 +123,13 @@ final class _FileActionSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildHandle() {
+  Widget _buildHandle(Color color) {
     return Container(
       width: 36,
       height: 4,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.textHint.withAlpha(80),
+        color: color.withAlpha(80),
         borderRadius: BorderRadius.circular(AppRadius.full),
       ),
     );
@@ -172,17 +179,19 @@ final class _ActionTile extends StatelessWidget {
   final String label;
   final bool isDestructive;
   final VoidCallback? onTap;
+  final Color textPrimary;
 
   const _ActionTile({
     required this.icon,
     required this.label,
     this.isDestructive = false,
     this.onTap,
+    required this.textPrimary,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? AppColors.error : AppColors.textPrimary;
+    final color = isDestructive ? AppColors.error : textPrimary;
 
     return Material(
       color: Colors.transparent,

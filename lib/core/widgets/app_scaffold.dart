@@ -4,6 +4,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
+import '../constants/design_tokens.dart';
 
 final class AppScaffold extends StatelessWidget {
   final Widget child;
@@ -35,28 +36,37 @@ final class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentIndex = _currentIndex(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: _FloatingBottomNav(
+      bottomNavigationBar: _PremiumNav(
         currentIndex: currentIndex,
+        isLight: isLight,
         onTap: (index) => _onTap(context, index),
       ),
     );
   }
 }
 
-final class _FloatingBottomNav extends StatelessWidget {
+final class _PremiumNav extends StatelessWidget {
   final int currentIndex;
+  final bool isLight;
   final ValueChanged<int> onTap;
 
-  const _FloatingBottomNav({
+  const _PremiumNav({
     required this.currentIndex,
+    required this.isLight,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = isLight ? AppColors.lightNavBackground : AppColors.darkNavBackground;
+    final borderColor = isLight
+        ? AppColors.lightBorder.withAlpha(120)
+        : AppColors.darkBorder.withAlpha(80);
+
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -65,12 +75,10 @@ final class _FloatingBottomNav extends StatelessWidget {
         AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: AppColors.navBackground,
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(
-          color: AppColors.border.withAlpha(60),
-          width: 0.5,
-        ),
+        border: Border.all(color: borderColor, width: 0.5),
+        boxShadow: DesignTokens.shadowSm,
       ),
       child: SafeArea(
         top: false,
@@ -86,24 +94,28 @@ final class _FloatingBottomNav extends StatelessWidget {
                 icon: LucideIcons.house,
                 label: 'Home',
                 isSelected: currentIndex == 0,
+                isLight: isLight,
                 onTap: () => onTap(0),
               ),
               _NavItem(
                 icon: LucideIcons.file_text,
                 label: 'Recent',
                 isSelected: currentIndex == 1,
+                isLight: isLight,
                 onTap: () => onTap(1),
               ),
               _NavItem(
                 icon: LucideIcons.box,
                 label: 'Tools',
                 isSelected: currentIndex == 2,
+                isLight: isLight,
                 onTap: () => onTap(2),
               ),
               _NavItem(
                 icon: LucideIcons.settings,
                 label: 'Settings',
                 isSelected: currentIndex == 3,
+                isLight: isLight,
                 onTap: () => onTap(3),
               ),
             ],
@@ -118,22 +130,26 @@ final class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
+  final bool isLight;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
     required this.label,
     required this.isSelected,
+    required this.isLight,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final unselectedColor = isLight ? AppColors.lightIconColor : AppColors.darkIconColor;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: DesignTokens.durationNormal,
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
@@ -151,16 +167,14 @@ final class _NavItem extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isSelected
-                  ? AppColors.primary
-                  : AppColors.iconColor,
+              color: isSelected ? AppColors.primary : unselectedColor,
             ),
             if (isSelected) ...[
               const SizedBox(width: AppSpacing.xxs),
               Flexible(
                 child: Text(
                   label,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,

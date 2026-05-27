@@ -17,6 +17,7 @@ final class SuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final extra = GoRouterState.of(context).extra;
 
     String filePath = '';
@@ -38,7 +39,7 @@ final class SuccessScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.lightBackground : AppColors.darkBackground,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -59,7 +60,7 @@ final class SuccessScreen extends StatelessWidget {
               ),
               const Spacer(),
               if (filePath.isNotEmpty)
-                _buildFileInfo(fileName, fileSize, pageCount, originalSize, fileCount),
+                _buildFileInfo(isLight, fileName, fileSize, pageCount, originalSize, fileCount),
               const Spacer(flex: 2),
               _SuccessActions(filePath: filePath, fileName: fileName),
               const SizedBox(height: AppSpacing.lg),
@@ -90,6 +91,7 @@ final class SuccessScreen extends StatelessWidget {
   }
 
   Widget _buildFileInfo(
+    bool isLight,
     String fileName,
     int fileSize,
     int pageCount,
@@ -106,50 +108,52 @@ final class SuccessScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: AppColors.border.withAlpha(60),
+          color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
           width: 0.5,
         ),
       ),
       child: Column(
         children: [
           if (isSplit) ...[
-            _infoRow('Files Created', '$fileCount'),
+            _infoRow(isLight, 'Files Created', '$fileCount'),
             const SizedBox(height: AppSpacing.md),
-            _infoRow('Total Pages', '$pageCount'),
+            _infoRow(isLight, 'Total Pages', '$pageCount'),
             if (fileSize > 0) ...[
               const SizedBox(height: AppSpacing.md),
-              _infoRow('Total Size', _formattedSize(fileSize)),
+              _infoRow(isLight, 'Total Size', _formattedSize(fileSize)),
             ],
           ] else ...[
-            _infoRow('File Name', fileName),
+            _infoRow(isLight, 'File Name', fileName),
             if (isCompressed) ...[
               const SizedBox(height: AppSpacing.md),
-              _infoRow('Original Size', _formattedSize(originalSize)),
+              _infoRow(isLight, 'Original Size', _formattedSize(originalSize)),
             ],
             const SizedBox(height: AppSpacing.md),
             _infoRow(
+              isLight,
               isCompressed ? 'Compressed Size' : 'Size',
               _formattedSize(fileSize),
             ),
             if (isCompressed) ...[
               const SizedBox(height: AppSpacing.md),
               _infoRow(
+                isLight,
                 'You Saved',
                 '${savings.toStringAsFixed(1)}%',
               ),
             ],
             const SizedBox(height: AppSpacing.md),
-            _infoRow('Pages', '$pageCount'),
+            _infoRow(isLight, 'Pages', '$pageCount'),
           ],
         ],
       ),
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(bool isLight, String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -158,7 +162,7 @@ final class SuccessScreen extends StatelessWidget {
           child: Text(
             value,
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textPrimary,
+              color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
               fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
@@ -202,6 +206,8 @@ final class _SuccessActionsState extends State<_SuccessActions> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return Column(
       children: [
         SizedBox(
@@ -230,7 +236,7 @@ final class _SuccessActionsState extends State<_SuccessActions> {
           child: Text(
             'Back to Home',
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary,
             ),
           ),
         ),
@@ -263,6 +269,7 @@ final class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final isLoading = widget.isLoading;
 
     return GestureDetector(
@@ -281,12 +288,12 @@ final class _ActionButtonState extends State<_ActionButton> {
           decoration: BoxDecoration(
             color: widget.isPrimary
                 ? AppColors.primary
-                : AppColors.card,
+                : (isLight ? AppColors.lightSurface1 : AppColors.darkSurface2),
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: widget.isPrimary
                 ? null
                 : Border.all(
-                    color: AppColors.border.withAlpha(100),
+                    color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(100),
                     width: 0.5,
                   ),
           ),
@@ -308,7 +315,7 @@ final class _ActionButtonState extends State<_ActionButton> {
                         size: 18,
                         color: widget.isPrimary
                             ? AppColors.onPrimary
-                            : AppColors.textPrimary,
+                            : (isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
@@ -316,7 +323,7 @@ final class _ActionButtonState extends State<_ActionButton> {
                         style: AppTextStyles.button.copyWith(
                           color: widget.isPrimary
                               ? AppColors.onPrimary
-                              : AppColors.textPrimary,
+                              : (isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary),
                         ),
                       ),
                     ],

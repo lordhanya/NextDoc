@@ -29,6 +29,13 @@ final class PdfThumbnailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final defaultTextStyle = DefaultTextStyle.of(context).style;
+    final captionStyle = defaultTextStyle.merge(AppTextStyles.caption);
+    final captionHighlight = captionStyle.copyWith(
+      color: AppColors.primary,
+      backgroundColor: AppColors.primary.withAlpha(30),
+    );
+
     return RepaintBoundary(
       child: GlassCard(
         onTap: onTap,
@@ -42,7 +49,7 @@ final class PdfThumbnailCard extends StatelessWidget {
                 child: SizedBox(
                   height: 140,
                   width: double.infinity,
-                  child: _buildThumbnail(),
+                  child: _buildThumbnail(context),
                 ),
               ),
             ),
@@ -51,11 +58,8 @@ final class PdfThumbnailCard extends StatelessWidget {
               text: highlightText(
                 fileName,
                 query,
-                AppTextStyles.caption,
-                AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                  backgroundColor: AppColors.primary.withAlpha(30),
-                ),
+                captionStyle,
+                captionHighlight,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -77,7 +81,7 @@ final class PdfThumbnailCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail() {
+  Widget _buildThumbnail(BuildContext context) {
     if (thumbnailBytes != null) {
       return Image.memory(
         thumbnailBytes!,
@@ -86,15 +90,21 @@ final class PdfThumbnailCard extends StatelessWidget {
       );
     }
 
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final placeholderBg = isLight ? AppColors.lightSurface2 : AppColors.darkSurface2;
+    final placeholderIcon = isLight
+        ? AppColors.lightTextMuted.withAlpha(100)
+        : AppColors.darkTextMuted.withAlpha(100);
+
     return Container(
-      color: AppColors.surfaceVariant,
+      color: placeholderBg,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.picture_as_pdf_rounded,
             size: 36,
-            color: AppColors.textHint.withAlpha(100),
+            color: placeholderIcon,
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(

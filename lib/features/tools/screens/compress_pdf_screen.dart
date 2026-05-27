@@ -86,8 +86,9 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.lightBackground : AppColors.darkBackground,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -104,28 +105,28 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildFileSection(),
+                    _buildFileSection(isLight),
                     const SizedBox(height: AppSpacing.xxl),
                     _buildLevelSelector(),
                   ],
                 ),
               ),
             ),
-            _buildBottomBar(),
+            _buildBottomBar(isLight),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFileSection() {
+  Widget _buildFileSection(bool isLight) {
     if (_filePath == null) {
-      return _buildEmptyPicker();
+      return _buildEmptyPicker(isLight);
     }
-    return _buildFileInfo();
+    return _buildFileInfo(isLight);
   }
 
-  Widget _buildEmptyPicker() {
+  Widget _buildEmptyPicker(bool isLight) {
     return GestureDetector(
       onTap: _pickFile,
       child: Container(
@@ -134,10 +135,10 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
           vertical: AppSpacing.xxxl + AppSpacing.lg,
         ),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
           borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(
-            color: AppColors.border.withAlpha(100),
+            color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(100),
             width: 1,
           ),
         ),
@@ -169,7 +170,7 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
     );
   }
 
-  Widget _buildFileInfo() {
+  Widget _buildFileInfo(bool isLight) {
     final thumbnailAsync = ref.watch(pdfThumbnailProvider(_filePath!));
 
     return Column(
@@ -205,10 +206,10 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
                           filterQuality: FilterQuality.medium,
                         );
                       }
-                      return _pdfIcon();
+                      return _pdfIcon(isLight);
                     },
-                    loading: () => _pdfIcon(),
-                    error: (_, _) => _pdfIcon(),
+                    loading: () => _pdfIcon(isLight),
+                    error: (_, _) => _pdfIcon(isLight),
                   ),
                 ),
               ),
@@ -238,13 +239,13 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
     );
   }
 
-  Widget _pdfIcon() {
+  Widget _pdfIcon(bool isLight) {
     return Container(
-      color: AppColors.surfaceVariant,
-      child: const Icon(
+      color: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
+      child: Icon(
         LucideIcons.file_text,
         size: 28,
-        color: AppColors.textHint,
+        color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
       ),
     );
   }
@@ -287,7 +288,7 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(bool isLight) {
     final enabled = _filePath != null;
 
     return Container(
@@ -298,10 +299,10 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
         AppSpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: isLight ? AppColors.lightSurface1 : AppColors.darkSurface1,
         border: Border(
           top: BorderSide(
-            color: AppColors.border.withAlpha(60),
+            color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
             width: 0.5,
           ),
         ),
@@ -335,6 +336,7 @@ final class _LevelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -343,12 +345,12 @@ final class _LevelCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withAlpha(15)
-              : AppColors.card,
+              : isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
-                : AppColors.border.withAlpha(60),
+                : (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(60),
             width: isSelected ? 1.5 : 0.5,
           ),
         ),
@@ -359,13 +361,15 @@ final class _LevelCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary.withAlpha(25)
-                    : AppColors.surfaceVariant,
+                    : isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.primary
+                    : isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -378,7 +382,7 @@ final class _LevelCard extends StatelessWidget {
                     style: AppTextStyles.titleSmall.copyWith(
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.textPrimary,
+                          : isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
@@ -430,8 +434,9 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final effectiveColor =
-        widget.isEnabled ? AppColors.primary : AppColors.textHint.withAlpha(60);
+        widget.isEnabled ? AppColors.primary : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60);
 
     return GestureDetector(
       onTapDown: widget.isEnabled
@@ -459,7 +464,7 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
               style: AppTextStyles.button.copyWith(
                 color: widget.isEnabled
                     ? AppColors.onPrimary
-                    : AppColors.textHint.withAlpha(120),
+                    : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(120),
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
