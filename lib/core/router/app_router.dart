@@ -10,7 +10,7 @@ import '../../features/tools/screens/image_to_pdf_screen.dart';
 import '../../features/tools/screens/split_pdf_screen.dart';
 import '../../features/tools/screens/processing_screen.dart';
 import '../../features/tools/screens/success_screen.dart';
-import '../../features/pdf/pdf_detail_screen.dart';
+import '../../features/pdf_viewer/pdf_viewer_page.dart';
 import '../../features/welcome/welcome_screen.dart';
 import '../widgets/app_scaffold.dart';
 
@@ -139,16 +139,15 @@ abstract final class AppRouter {
         ),
       ),
       GoRoute(
-        path: '/pdf-detail',
+        path: '/pdf-viewer',
         pageBuilder: (context, state) => _slideUpTransition(
           context,
           state,
-          PdfDetailScreen(
+          PdfViewerPage(
             filePath: state.extra is Map ? (state.extra as Map)['filePath'] as String : '',
             fileName: state.extra is Map ? (state.extra as Map)['fileName'] as String : '',
             fileSize: state.extra is Map ? (state.extra as Map)['fileSize'] as int : 0,
             pageCount: state.extra is Map ? (state.extra as Map)['pageCount'] as int : 0,
-            heroTag: state.extra is Map ? (state.extra as Map)['heroTag'] as String : '',
           ),
         ),
       ),

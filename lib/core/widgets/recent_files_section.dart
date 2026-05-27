@@ -186,7 +186,7 @@ final class _RecentFileRow extends ConsumerWidget {
       fileSize: file.fileSize,
       pageCount: file.pageCount > 0 ? file.pageCount : 1,
       onOpen: () => context.push(
-        '/pdf-detail',
+        '/pdf-viewer',
         extra: {
           'filePath': file.filePath,
           'fileName': file.fileName,
@@ -266,7 +266,7 @@ final class _RecentFileRow extends ConsumerWidget {
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       onTap: () => context.push(
-        '/pdf-detail',
+        '/pdf-viewer',
         extra: {
           'filePath': file.filePath,
           'fileName': file.fileName,
@@ -370,7 +370,7 @@ final class _FileCard extends ConsumerWidget {
       fileSize: file.fileSize,
       pageCount: file.pageCount > 0 ? file.pageCount : 1,
       onOpen: () => context.push(
-        '/pdf-detail',
+        '/pdf-viewer',
         extra: {
           'filePath': file.filePath,
           'fileName': file.fileName,
@@ -446,7 +446,7 @@ final class _FileCard extends ConsumerWidget {
         pageCount: file.pageCount > 0 ? file.pageCount : 1,
         query: query,
         onTap: () => context.push(
-          '/pdf-detail',
+          '/pdf-viewer',
           extra: {
             'filePath': file.filePath,
             'fileName': file.fileName,
