@@ -1,9 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_radius.dart';
-import '../constants/app_spacing.dart';
 import '../constants/design_tokens.dart';
 
 final class AppScaffold extends StatelessWidget {
@@ -49,9 +48,11 @@ final class AppScaffold extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Premium Floating Navigation Bar
-// ─────────────────────────────────────────────────────────────────────────────
+final class _NavItemData {
+  final IconData icon;
+  final String label;
+  const _NavItemData({required this.icon, required this.label});
+}
 
 final class _PremiumNav extends StatelessWidget {
   final int currentIndex;
@@ -64,150 +65,134 @@ final class _PremiumNav extends StatelessWidget {
     required this.onTap,
   });
 
+  static const _navItems = [
+    _NavItemData(icon: LucideIcons.house, label: 'Home'),
+    _NavItemData(icon: LucideIcons.file_text, label: 'Recent'),
+    _NavItemData(icon: LucideIcons.box, label: 'Tools'),
+    _NavItemData(icon: LucideIcons.settings, label: 'Settings'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final bgColor = isLight ? AppColors.lightNavBackground : AppColors.darkNavBackground;
     final borderColor = isLight
-        ? AppColors.lightBorder.withAlpha(120)
-        : AppColors.darkBorder.withAlpha(80);
+        ? AppColors.lightBorder.withAlpha(100)
+        : AppColors.darkBorder.withAlpha(60);
+    final unselectedColor = AppColors.primary.withAlpha(isLight ? 170 : 200);
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final navBg = isLight
+        ? const Color(0xB0EEF2FF)
+        : const Color(0xB012122A);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: borderColor, width: 0.5),
-        boxShadow: DesignTokens.navShadow(isLight),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.sm,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: LucideIcons.house,
-                label: 'Home',
-                isSelected: currentIndex == 0,
-                isLight: isLight,
-                onTap: () => onTap(0),
-              ),
-              _NavItem(
-                icon: LucideIcons.file_text,
-                label: 'Recent',
-                isSelected: currentIndex == 1,
-                isLight: isLight,
-                onTap: () => onTap(1),
-              ),
-              _NavItem(
-                icon: LucideIcons.box,
-                label: 'Tools',
-                isSelected: currentIndex == 2,
-                isLight: isLight,
-                onTap: () => onTap(2),
-              ),
-              _NavItem(
-                icon: LucideIcons.settings,
-                label: 'Settings',
-                isSelected: currentIndex == 3,
-                isLight: isLight,
-                onTap: () => onTap(3),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Navigation Item with elegant active state
-// ─────────────────────────────────────────────────────────────────────────────
-
-final class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final bool isLight;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.isLight,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final unselectedColor = isLight ? AppColors.lightIconColor : AppColors.darkIconColor;
-    final activeBg = isLight
-        ? AppColors.primary.withAlpha(15)
-        : AppColors.primary.withAlpha(25);
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: DesignTokens.durationNormal,
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? activeBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                if (isSelected)
-                  AnimatedContainer(
-                    duration: DesignTokens.durationSlow,
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(15),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isSelected ? AppColors.primary : unselectedColor,
+      margin: EdgeInsets.fromLTRB(16, 0, 16, 8 + bottomInset),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: navBg,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: borderColor, width: 0.5),
+              boxShadow: [
+                BoxShadow(
+                  color: isLight
+                      ? const Color(0x1A000000)
+                      : const Color(0x40000000),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: isLight
+                      ? const Color(0x0D000000)
+                      : const Color(0x22000000),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: isLight
+                      ? const Color(0x05000000)
+                      : const Color(0x12000000),
+                  blurRadius: 48,
+                  offset: const Offset(0, 24),
                 ),
               ],
             ),
-            if (isSelected) ...[
-              const SizedBox(width: AppSpacing.xxs),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final totalWidth = constraints.maxWidth;
+                    final itemWidth = totalWidth / 4;
+
+                    return SizedBox(
+                      width: totalWidth,
+                      height: 36,
+                      child: Stack(
+                        children: [
+                          AnimatedPositioned(
+                            left: itemWidth * currentIndex + 4,
+                            width: itemWidth - 8,
+                            top: 0,
+                            bottom: 0,
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeOutCubic,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF6366F1), Color(0xFF7C5CFF)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: List.generate(4, (index) {
+                              final item = _navItems[index];
+                              final isActive = currentIndex == index;
+                              return Expanded(
+                                child: Tooltip(
+                                  message: item.label,
+                                  child: GestureDetector(
+                                    onTap: () => onTap(index),
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Center(
+                                      child: AnimatedScale(
+                                        scale: isActive ? 1.0 : 0.85,
+                                        duration: DesignTokens.durationNormal,
+                                        curve: Curves.easeOutBack,
+                                        child: AnimatedContainer(
+                                          duration: DesignTokens.durationNormal,
+                                          curve: Curves.easeOut,
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: isActive
+                                                ? Colors.white.withAlpha(20)
+                                                : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(
+                                            item.icon,
+                                            size: 20,
+                                            color: isActive ? Colors.white : unselectedColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );

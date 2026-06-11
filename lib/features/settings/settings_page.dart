@@ -192,7 +192,7 @@ final class _SettingsRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              trailing,
+              Flexible(child: trailing),
             ],
           ),
         ),
@@ -653,7 +653,7 @@ final class _AboutSection extends StatelessWidget {
               const _SettingsRow(
                 icon: LucideIcons.user,
                 title: 'Developer',
-                trailing: _AboutValue('NextDoc Team'),
+                trailing: _AboutValue('ASHIFCODES'),
                 semanticColor: AppColors.settingsAbout,
               ),
               const _SettingsRow(
@@ -678,6 +678,11 @@ final class _AboutValue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(value, style: AppTextStyles.bodySmall);
+    return Text(
+      value,
+      style: AppTextStyles.bodySmall,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
   }
 }
