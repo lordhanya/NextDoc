@@ -278,13 +278,30 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 Text(
-                  'Tap to select a PDF file',
+                  'Select PDF File',
                   style: AppTextStyles.titleSmall,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Split a PDF into multiple separate files',
                   style: AppTextStyles.caption,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                TextButton.icon(
+                  onPressed: _pickFile,
+                  icon: const Icon(LucideIcons.file_up, size: 18),
+                  label: const Text('Select PDF File'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xxl,
+                      vertical: AppSpacing.md,
+                    ),
+                    side: BorderSide(color: AppColors.primary.withAlpha(60)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
                 ),
               ],
             ),

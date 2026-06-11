@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart' hide PdfDocument;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart';
 import 'package:image/image.dart' as img;
+import 'metadata_service.dart';
 
 enum CompressionLevel { low, medium, high }
 
@@ -113,7 +114,11 @@ final class CompressPdfService {
     await pdfDoc.close();
     onProgress(pageCount / progressTotal);
 
-    final doc = pw.Document();
+    final doc = MetadataService.createPdfDocument(
+        title: 'Compressed PDF',
+        subject: 'Compressed with NextDoc (${level.name})',
+        keywords: 'NextDoc, Compress PDF',
+      );
 
     for (var i = 0; i < imagePages.length; i++) {
       if (_cancelled) throw Exception('Cancelled');

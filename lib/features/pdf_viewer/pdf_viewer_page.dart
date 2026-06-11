@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/theme/typography.dart';
+import 'dart:io';
 import '../../core/services/pdf_reading_service.dart';
 import 'providers/pdf_controller_provider.dart';
 import 'providers/pdf_document_provider.dart';
@@ -17,6 +18,8 @@ final class PdfViewerPage extends ConsumerStatefulWidget {
   final String fileName;
   final int fileSize;
   final int pageCount;
+  final String? password;
+  final bool isTempFile;
 
   const PdfViewerPage({
     super.key,
@@ -24,6 +27,8 @@ final class PdfViewerPage extends ConsumerStatefulWidget {
     required this.fileName,
     required this.fileSize,
     required this.pageCount,
+    this.password,
+    this.isTempFile = false,
   });
 
   @override
@@ -100,12 +105,15 @@ final class _PdfViewerPageState extends ConsumerState<PdfViewerPage> {
     }
     super.dispose();
     _pageController.dispose();
+    if (widget.isTempFile) {
+      File(widget.filePath).delete().ignore();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final docAsync = ref.watch(pdfDocumentProvider(widget.filePath));
+    final docAsync = ref.watch(pdfDocumentProvider((widget.filePath, widget.password)));
     final viewerState = ref.watch(pdfViewerProvider(widget.filePath));
 
     if (!_didRestorePage && docAsync.hasValue) {
@@ -195,7 +203,7 @@ final class _PdfViewerPageState extends ConsumerState<PdfViewerPage> {
                         filePath: widget.filePath,
                         isLight: isLight,
                         onRetry: () {
-                          ref.invalidate(pdfDocumentProvider(widget.filePath));
+                          ref.invalidate(pdfDocumentProvider((widget.filePath, widget.password)));
                           _didRestorePage = false;
                         },
                       ),

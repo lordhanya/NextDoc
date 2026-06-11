@@ -39,3 +39,8 @@ final pdfMetadataProvider = FutureProvider.family<PdfMetadata?, String>((ref, fi
   final pdfService = ref.watch(pdfServiceProvider);
   return pdfService.getMetadata(filePath);
 });
+
+final isPdfEncryptedProvider = FutureProvider.family<bool, String>((ref, filePath) async {
+  final pdfService = ref.watch(pdfServiceProvider);
+  return pdfService.isEncrypted(filePath);
+});

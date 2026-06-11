@@ -6,7 +6,7 @@ import 'pdf_document_provider.dart';
 final pdfThumbnailProvider = FutureProvider.family<Uint8List?, (String filePath, int pageIndex)>(
   (ref, params) async {
     final (filePath, pageIndex) = params;
-    final docAsync = ref.watch(pdfDocumentProvider(filePath));
+    final docAsync = ref.watch(pdfDocumentProvider((filePath, null)));
     final doc = docAsync.valueOrNull;
     if (doc == null || doc.isClosed) return null;
 

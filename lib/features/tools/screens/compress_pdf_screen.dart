@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/providers/recent_files_provider.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/compress_pdf_service.dart';
 import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/pdf_service.dart';
@@ -27,6 +28,20 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
   int? _fileSize;
   int? _pageCount;
   CompressionLevel _selectedLevel = CompressionLevel.medium;
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      final saved = ref.read(settingsProvider).compressionDefault;
+      _selectedLevel = CompressionLevel.values.firstWhere(
+        (e) => e.name == saved.name,
+        orElse: () => CompressionLevel.medium,
+      );
+    }
+  }
 
   Future<void> _pickFile() async {
     final file = await _filePicker.pickPdf();
@@ -163,6 +178,23 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
             Text(
               'Choose a PDF to reduce its file size',
               style: AppTextStyles.caption,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextButton.icon(
+              onPressed: _pickFile,
+              icon: const Icon(LucideIcons.file_up, size: 18),
+              label: const Text('Select PDF File'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xxl,
+                  vertical: AppSpacing.md,
+                ),
+                side: BorderSide(color: AppColors.primary.withAlpha(60)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:gal/gal.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:path_provider/path_provider.dart';
+import 'metadata_service.dart';
 import 'settings_service.dart';
 
 final class PdfToImageResult {
@@ -73,10 +74,14 @@ final class PdfToImageService {
           if (pageImage == null) continue;
 
           final outputPath = '$sourceDir/page_${pageIndex + 1}.jpg';
-          await File(outputPath).writeAsBytes(pageImage.bytes);
+          final imageBytes = MetadataService.injectJpegExif(
+            pageImage.bytes,
+            quality: qualityValue,
+          );
+          await File(outputPath).writeAsBytes(imageBytes);
 
           imagePaths.add(outputPath);
-          totalSize += pageImage.bytes.length;
+          totalSize += imageBytes.length;
         } finally {
           if (!page.isClosed) await page.close();
         }

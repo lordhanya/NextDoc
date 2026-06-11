@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:image/image.dart' as img;
+import 'metadata_service.dart';
 
 final class PdfConversionResult {
   final String filePath;
@@ -102,7 +103,11 @@ void _runConversion(_IsolateArgs args) async {
   final sendPort = args.sendPort;
 
   try {
-    final pdf = pw.Document();
+    final pdf = MetadataService.createPdfDocument(
+        title: 'Image to PDF',
+        subject: 'Converted from ${paths.length} image(s)',
+        keywords: 'NextDoc, Image to PDF',
+      );
 
     for (var i = 0; i < paths.length; i++) {
       final bytes = await File(paths[i]).readAsBytes();

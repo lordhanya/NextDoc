@@ -248,6 +248,23 @@ final class _PdfProtectionScreenState extends ConsumerState<PdfProtectionScreen>
               'Choose a PDF to add or remove password protection',
               style: AppTextStyles.caption,
             ),
+            const SizedBox(height: AppSpacing.lg),
+            TextButton.icon(
+              onPressed: _pickFile,
+              icon: const Icon(LucideIcons.file_up, size: 18),
+              label: const Text('Select PDF File'),
+              style: TextButton.styleFrom(
+                foregroundColor: accent,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xxl,
+                  vertical: AppSpacing.md,
+                ),
+                side: BorderSide(color: accent.withAlpha(60)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+            ),
           ],
         ),
       ),

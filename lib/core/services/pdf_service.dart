@@ -20,6 +20,7 @@ final class PdfMetadata {
 
 final class PdfService {
   final _thumbnailCache = <String, Uint8List>{};
+  final _encryptedCache = <String, bool>{};
 
   Future<PdfMetadata?> getMetadata(String filePath) async {
     try {
@@ -42,6 +43,31 @@ final class PdfService {
     }
   }
 
+  Future<bool> isEncrypted(String filePath) async {
+    if (_encryptedCache.containsKey(filePath)) {
+      return _encryptedCache[filePath]!;
+    }
+    try {
+      final doc = await PdfDocument.openFile(filePath);
+      await doc.close();
+      _encryptedCache[filePath] = false;
+      return false;
+    } catch (_) {
+      _encryptedCache[filePath] = true;
+      return true;
+    }
+  }
+
+  Future<bool> verifyPassword(String filePath, String password) async {
+    try {
+      final doc = await PdfDocument.openFile(filePath, password: password);
+      await doc.close();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Uint8List?> getThumbnail(String filePath, {int page = 0}) async {
     final cacheKey = '$filePath:$page';
     if (_thumbnailCache.containsKey(cacheKey)) {
@@ -50,25 +76,33 @@ final class PdfService {
 
     try {
       final doc = await PdfDocument.openFile(filePath);
-      final pageImage = await doc.getPage(page + 1).then(
-            (p) => p.render(
-              width: 200,
-              height: 260,
-              format: PdfPageImageFormat.jpeg,
-              backgroundColor: '#0D0D0D',
-            ),
+      try {
+        final p = await doc.getPage(page + 1);
+        try {
+          final pageImage = await p.render(
+            width: 200,
+            height: 260,
+            format: PdfPageImageFormat.jpeg,
+            backgroundColor: '#0D0D0D',
           );
-      await doc.close();
+          if (pageImage == null) return null;
 
-      if (pageImage == null) return null;
-
-      final bytes = pageImage.bytes;
-      _thumbnailCache[cacheKey] = bytes;
-      return bytes;
+          final bytes = pageImage.bytes;
+          _thumbnailCache[cacheKey] = bytes;
+          return bytes;
+        } finally {
+          if (!p.isClosed) await p.close();
+        }
+      } finally {
+        await doc.close();
+      }
     } catch (_) {
       return null;
     }
   }
 
-  void clearCache() => _thumbnailCache.clear();
+  void clearCache() {
+    _thumbnailCache.clear();
+    _encryptedCache.clear();
+  }
 }

@@ -14,6 +14,8 @@ import '../services/file_action_service.dart';
 import '../services/file_management_service.dart';
 import '../services/image_action_service.dart';
 import '../theme/typography.dart';
+import 'package:pdfx/pdfx.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' as syncfusion;
 import 'delete_confirm_dialog.dart';
 import 'empty_state_widget.dart';
 import 'file_action_sheet.dart';
@@ -110,6 +112,7 @@ final class _RecentFilesGrid extends ConsumerWidget {
         }
 
         final thumbnailAsync = ref.watch(pageThumbnailProvider((file.filePath, 0)));
+        final encrypted = ref.watch(isPdfEncryptedProvider(file.filePath)).valueOrNull ?? false;
 
         return thumbnailAsync.when(
           data: (bytes) => _FileCard(
@@ -117,18 +120,21 @@ final class _RecentFilesGrid extends ConsumerWidget {
             heroTag: heroTag,
             thumbnailBytes: bytes,
             query: query,
+            isEncrypted: bytes == null ? encrypted : false,
           ),
           loading: () => _FileCard(
             file: file,
             heroTag: heroTag,
             thumbnailBytes: null,
             query: query,
+            isEncrypted: encrypted,
           ),
           error: (_, _) => _FileCard(
             file: file,
             heroTag: heroTag,
             thumbnailBytes: null,
             query: query,
+            isEncrypted: encrypted,
           ),
         );
       },
@@ -222,15 +228,12 @@ final class _RecentFileRow extends ConsumerWidget {
       filePath: file.filePath,
       fileSize: file.fileSize,
       pageCount: file.pageCount > 0 ? file.pageCount : 1,
-      onOpen: () => context.push(
-        '/pdf-viewer',
-        extra: {
-          'filePath': file.filePath,
-          'fileName': file.fileName,
-          'fileSize': file.fileSize,
-          'pageCount': file.pageCount > 0 ? file.pageCount : 1,
-          'heroTag': 'pdf_list_${file.id}',
-        },
+      onOpen: () => _openPdfWithPasswordCheck(context, ref,
+        filePath: file.filePath,
+        fileName: file.fileName,
+        fileSize: file.fileSize,
+        pageCount: file.pageCount > 0 ? file.pageCount : 1,
+        heroTag: 'pdf_list_${file.id}',
       ),
       onShare: () => FileActionService.sharePdf(context, file.filePath, file.fileName),
       onRename: () => _handleRename(context, ref),
@@ -314,15 +317,14 @@ final class _RecentFileRow extends ConsumerWidget {
                 file.filePath,
                 [file.filePath],
               )
-          : () => context.push(
-                '/pdf-viewer',
-                extra: {
-                  'filePath': file.filePath,
-                  'fileName': file.fileName,
-                  'fileSize': file.fileSize,
-                  'pageCount': file.pageCount > 0 ? file.pageCount : 1,
-                  'heroTag': 'pdf_list_${file.id}',
-                },
+          : () => _openPdfWithPasswordCheck(
+                context,
+                ref,
+                filePath: file.filePath,
+                fileName: file.fileName,
+                fileSize: file.fileSize,
+                pageCount: file.pageCount > 0 ? file.pageCount : 1,
+                heroTag: 'pdf_list_${file.id}',
               ),
       child: Row(
         children: [
@@ -399,12 +401,14 @@ final class _FileCard extends ConsumerWidget {
   final String heroTag;
   final Uint8List? thumbnailBytes;
   final String query;
+  final bool isEncrypted;
 
   const _FileCard({
     required this.file,
     required this.heroTag,
     this.thumbnailBytes,
     required this.query,
+    this.isEncrypted = false,
   });
 
   String _formattedSize(int bytes) {
@@ -420,15 +424,12 @@ final class _FileCard extends ConsumerWidget {
       filePath: file.filePath,
       fileSize: file.fileSize,
       pageCount: file.pageCount > 0 ? file.pageCount : 1,
-      onOpen: () => context.push(
-        '/pdf-viewer',
-        extra: {
-          'filePath': file.filePath,
-          'fileName': file.fileName,
-          'fileSize': file.fileSize,
-          'pageCount': file.pageCount > 0 ? file.pageCount : 1,
-          'heroTag': heroTag,
-        },
+      onOpen: () => _openPdfWithPasswordCheck(context, ref,
+        filePath: file.filePath,
+        fileName: file.fileName,
+        fileSize: file.fileSize,
+        pageCount: file.pageCount > 0 ? file.pageCount : 1,
+        heroTag: heroTag,
       ),
       onShare: () => FileActionService.sharePdf(context, file.filePath, file.fileName),
       onRename: () => _handleRename(context, ref),
@@ -492,19 +493,17 @@ final class _FileCard extends ConsumerWidget {
       child: PdfThumbnailCard(
         heroTag: heroTag,
         thumbnailBytes: thumbnailBytes,
+        isEncrypted: isEncrypted,
         fileName: file.fileName,
         fileSize: _formattedSize(file.fileSize),
         pageCount: file.pageCount > 0 ? file.pageCount : 1,
         query: query,
-        onTap: () => context.push(
-          '/pdf-viewer',
-          extra: {
-            'filePath': file.filePath,
-            'fileName': file.fileName,
-            'fileSize': file.fileSize,
-            'pageCount': file.pageCount > 0 ? file.pageCount : 1,
-            'heroTag': heroTag,
-          },
+        onTap: () => _openPdfWithPasswordCheck(context, ref,
+          filePath: file.filePath,
+          fileName: file.fileName,
+          fileSize: file.fileSize,
+          pageCount: file.pageCount > 0 ? file.pageCount : 1,
+          heroTag: heroTag,
         ),
       ),
     );
@@ -649,5 +648,162 @@ final class _ImageFileCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+final class _PdfPasswordDialog extends StatefulWidget {
+  const _PdfPasswordDialog();
+
+  @override
+  State<_PdfPasswordDialog> createState() => _PdfPasswordDialogState();
+}
+
+final class _PdfPasswordDialogState extends State<_PdfPasswordDialog> {
+  final _controller = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    return AlertDialog(
+      backgroundColor: isLight ? AppColors.lightSurface1 : AppColors.darkSurface2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
+      title: Row(
+        children: [
+          Icon(LucideIcons.lock, size: 20, color: AppColors.iconProtection),
+          const SizedBox(width: AppSpacing.sm),
+          Text('Password Required', style: AppTextStyles.titleSmall),
+        ],
+      ),
+      content: TextField(
+        controller: _controller,
+        obscureText: _obscure,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: 'Enter PDF password',
+          hintStyle: AppTextStyles.body.copyWith(
+            color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderSide: BorderSide(
+              color: (isLight ? AppColors.lightBorder : AppColors.darkBorder).withAlpha(80),
+            ),
+          ),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscure ? LucideIcons.eye_off : LucideIcons.eye,
+              size: 18,
+              color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
+            ),
+            onPressed: () => setState(() => _obscure = !_obscure),
+          ),
+        ),
+        style: AppTextStyles.body.copyWith(
+          color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancel', style: AppTextStyles.caption),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text('Unlock', style: AppTextStyles.caption.copyWith(
+            color: AppColors.iconProtection,
+            fontWeight: FontWeight.w600,
+          )),
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> _openPdfWithPasswordCheck(
+  BuildContext context,
+  WidgetRef ref, {
+  required String filePath,
+  required String fileName,
+  required int fileSize,
+  required int pageCount,
+  required String heroTag,
+}) async {
+  try {
+    final doc = await PdfDocument.openFile(filePath);
+    await doc.close();
+    if (context.mounted) {
+      context.push('/pdf-viewer', extra: {
+        'filePath': filePath,
+        'fileName': fileName,
+        'fileSize': fileSize,
+        'pageCount': pageCount,
+        'heroTag': heroTag,
+      });
+    }
+    return;
+  } catch (_) {}
+
+  final result = await showDialog<String>(
+    context: context,
+    builder: (_) => const _PdfPasswordDialog(),
+  );
+  if (result == null || result.isEmpty) return;
+
+  try {
+    final bytes = await File(filePath).readAsBytes();
+    final srcDoc = syncfusion.PdfDocument(inputBytes: bytes, password: result);
+    final actualPageCount = srcDoc.pages.count;
+
+    final newDoc = syncfusion.PdfDocument();
+    for (var i = 0; i < actualPageCount; i++) {
+      final srcPage = srcDoc.pages[i];
+      final template = srcPage.createTemplate();
+      final section = newDoc.sections!.add();
+      section.pageSettings.size = srcPage.size;
+      section.pageSettings.margins.all = 0;
+      section.pages.add().graphics.drawPdfTemplate(template, const Offset(0, 0));
+    }
+
+    final decryptedBytes = await newDoc.save();
+    srcDoc.dispose();
+    newDoc.dispose();
+
+    final tempPath = '${Directory.systemTemp.path}/nextdoc_${DateTime.now().microsecondsSinceEpoch}.pdf';
+    await File(tempPath).writeAsBytes(decryptedBytes);
+
+    if (context.mounted) {
+      context.push('/pdf-viewer', extra: {
+        'filePath': tempPath,
+        'fileName': fileName,
+        'fileSize': fileSize,
+        'pageCount': actualPageCount,
+        'heroTag': heroTag,
+        'isTempFile': true,
+      });
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.triangle_alert, size: 18, color: AppColors.error),
+              const SizedBox(width: AppSpacing.sm),
+              Text('Incorrect password', style: AppTextStyles.caption),
+            ],
+          ),
+          backgroundColor: AppColors.error.withAlpha(220),
+        ),
+      );
+    }
   }
 }

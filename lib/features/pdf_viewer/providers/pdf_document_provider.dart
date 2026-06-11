@@ -10,10 +10,13 @@ final class PdfDocumentException implements Exception {
   String toString() => '$title: $description';
 }
 
-final pdfDocumentProvider = FutureProvider.family<PdfDocument?, String>(
-  (ref, filePath) async {
+final pdfDocumentProvider = FutureProvider.family<PdfDocument?, (String filePath, String? password)>(
+  (ref, params) async {
+    final (filePath, password) = params;
     try {
-      final doc = await PdfDocument.openFile(filePath);
+      final doc = password != null
+          ? await PdfDocument.openFile(filePath, password: password)
+          : await PdfDocument.openFile(filePath);
       ref.onDispose(() => doc.close());
       return doc;
     } on PdfDocumentException {

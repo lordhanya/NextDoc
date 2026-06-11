@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart' hide PdfDocument;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart';
 import 'package:image/image.dart' as img;
+import 'metadata_service.dart';
 
 final class MergeResult {
   final String filePath;
@@ -90,7 +91,11 @@ final class MergePdfService {
 
     onProgress((inputPaths.length) / (inputPaths.length + 2));
 
-    final doc = pw.Document();
+    final doc = MetadataService.createPdfDocument(
+        title: 'Merged PDF',
+        subject: 'Merged from ${inputPaths.length} PDF file(s)',
+        keywords: 'NextDoc, Merge PDF',
+      );
 
     for (var i = 0; i < imagePages.length; i++) {
       if (_cancelled) throw Exception('Cancelled');

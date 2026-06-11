@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
@@ -10,6 +11,7 @@ import 'glass_card.dart';
 final class PdfThumbnailCard extends StatelessWidget {
   final String heroTag;
   final Uint8List? thumbnailBytes;
+  final bool isEncrypted;
   final String fileName;
   final String fileSize;
   final int pageCount;
@@ -20,6 +22,7 @@ final class PdfThumbnailCard extends StatelessWidget {
     super.key,
     required this.heroTag,
     this.thumbnailBytes,
+    this.isEncrypted = false,
     required this.fileName,
     required this.fileSize,
     required this.pageCount,
@@ -95,6 +98,30 @@ final class PdfThumbnailCard extends StatelessWidget {
     final placeholderIcon = isLight
         ? AppColors.lightTextMuted.withAlpha(100)
         : AppColors.darkTextMuted.withAlpha(100);
+
+    if (isEncrypted) {
+      final lockBg = AppColors.iconProtection.withAlpha(20);
+      return Container(
+        color: lockBg,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.lock,
+              size: 32,
+              color: AppColors.iconProtection,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Encrypted',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.iconProtection,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       color: placeholderBg,

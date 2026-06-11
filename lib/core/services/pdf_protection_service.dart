@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as syncfusion;
 import 'package:image/image.dart' as img;
+import 'metadata_service.dart';
 
 enum ProtectionMode { protect, unlock }
 
@@ -139,7 +140,11 @@ final class PdfProtectionService {
     await pdfDoc.close();
     onProgress(pageCount / progressTotal);
 
-    final doc = pw.Document();
+    final doc = MetadataService.createPdfDocument(
+        title: 'Unlocked PDF',
+        subject: 'Password removed with NextDoc',
+        keywords: 'NextDoc, Unlock PDF',
+      );
 
     for (var i = 0; i < imagePages.length; i++) {
       if (_cancelled) throw Exception('Cancelled');

@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart' hide PdfDocument;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart';
 import 'package:image/image.dart' as img;
+import 'metadata_service.dart';
 
 enum SplitMode { extract, splitAll }
 
@@ -97,7 +98,11 @@ final class SplitPdfService {
         if (_cancelled) throw Exception('Cancelled');
         onProgress((idx + 1) / progressTotal);
 
-        final doc = pw.Document();
+        final doc = MetadataService.createPdfDocument(
+            title: '${baseName}_page_$pageIdx',
+            subject: 'Extracted from $baseName',
+            keywords: 'NextDoc, Split PDF',
+          );
         if (image != null) {
           final decoded = img.decodeImage(image.bytes);
           if (decoded != null) {
@@ -162,7 +167,11 @@ final class SplitPdfService {
       if (_cancelled) throw Exception('Cancelled');
       onProgress((selectedPageIndices.length) / progressTotal);
 
-      final doc = pw.Document();
+      final doc = MetadataService.createPdfDocument(
+          title: '${baseName}_extracted',
+          subject: 'Extracted pages from $baseName',
+          keywords: 'NextDoc, Split PDF',
+        );
       for (var i = 0; i < imagePages.length; i++) {
         if (_cancelled) throw Exception('Cancelled');
 

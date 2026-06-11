@@ -166,6 +166,8 @@ abstract final class AppRouter {
             fileName: state.extra is Map ? (state.extra as Map)['fileName'] as String : '',
             fileSize: state.extra is Map ? (state.extra as Map)['fileSize'] as int : 0,
             pageCount: state.extra is Map ? (state.extra as Map)['pageCount'] as int : 0,
+            password: state.extra is Map ? (state.extra as Map)['password'] as String? : null,
+            isTempFile: state.extra is Map ? (state.extra as Map)['isTempFile'] as bool? ?? false : false,
           ),
         ),
       ),
