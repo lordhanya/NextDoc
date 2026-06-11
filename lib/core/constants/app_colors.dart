@@ -57,6 +57,7 @@ abstract final class AppColors {
   static const Color iconSplit = Color(0xFF22C55E);
   static const Color iconImageToPdf = Color(0xFF7C5CFF);
   static const Color iconPdfToJpg = Color(0xFF06B6D4);
+  static const Color iconProtection = Color(0xFFE85D3A);
   static const Color iconDelete = Color(0xFFEF4444);
   static const Color iconSettings = Color(0xFF7C5CFF);
 

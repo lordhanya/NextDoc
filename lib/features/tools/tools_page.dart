@@ -46,6 +46,13 @@ final class ToolsPage extends StatelessWidget {
       route: '/tools/pdf-to-image',
       color: AppColors.iconPdfToJpg,
     ),
+    _ToolInfo(
+      icon: LucideIcons.shield_check,
+      label: 'PDF Protection',
+      description: 'Add or remove password protection',
+      route: '/tools/pdf-protection',
+      color: AppColors.iconProtection,
+    ),
   ];
 
   @override

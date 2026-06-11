@@ -9,6 +9,7 @@ import '../../features/tools/screens/compress_pdf_screen.dart';
 import '../../features/tools/screens/image_to_pdf_screen.dart';
 import '../../features/tools/screens/split_pdf_screen.dart';
 import '../../features/tools/screens/pdf_to_image_screen.dart';
+import '../../features/tools/screens/pdf_protection_screen.dart';
 import '../../features/tools/screens/processing_screen.dart';
 import '../../features/tools/screens/success_screen.dart';
 import '../../features/pdf_viewer/pdf_viewer_page.dart';
@@ -129,6 +130,14 @@ abstract final class AppRouter {
           context,
           state,
           const PdfToImageScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/tools/pdf-protection',
+        pageBuilder: (context, state) => _slideUpTransition(
+          context,
+          state,
+          const PdfProtectionScreen(),
         ),
       ),
       GoRoute(

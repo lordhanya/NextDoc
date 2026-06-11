@@ -15,6 +15,7 @@ import '../../../core/services/image_to_pdf_service.dart';
 import '../../../core/services/merge_pdf_service.dart';
 import '../../../core/services/split_pdf_service.dart';
 import '../../../core/services/pdf_to_image_service.dart';
+import '../../../core/services/pdf_protection_service.dart';
 import '../../../core/services/settings_service.dart';
 import '../../../core/services/task_service.dart';
 import '../../../core/theme/typography.dart';
@@ -33,6 +34,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   final _compressService = CompressPdfService();
   final _splitService = SplitPdfService();
   final _pdfToImageService = PdfToImageService();
+  final _pdfProtectionService = PdfProtectionService();
   StreamSubscription<TaskProgress>? _taskSubscription;
   StreamSubscription<double>? _realSubscription;
   TaskProgress _taskProgress = const TaskProgress();
@@ -44,6 +46,10 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   bool _isCompress = false;
   bool _isSplit = false;
   bool _isPdfToImage = false;
+  bool _isProtect = false;
+  bool _isUnlock = false;
+  String? _protectInputPath;
+  String? _protectPassword;
   List<String> _imagePaths = [];
   List<String> _mergePaths = [];
   String? _compressPath;
@@ -113,6 +119,24 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         );
         return;
       }
+      if (type == 'protect') {
+        _isProtect = true;
+        _protectInputPath = extra['path'] as String?;
+        _fileName = extra['fileName'] as String? ?? 'document.pdf';
+        _protectPassword = extra['password'] as String?;
+        _originalSize = extra['fileSize'] as int? ?? 0;
+        _pageCount = extra['pageCount'] as int?;
+        return;
+      }
+      if (type == 'unlock') {
+        _isUnlock = true;
+        _protectInputPath = extra['path'] as String?;
+        _fileName = extra['fileName'] as String? ?? 'document.pdf';
+        _protectPassword = extra['password'] as String?;
+        _originalSize = extra['fileSize'] as int? ?? 0;
+        _pageCount = extra['pageCount'] as int?;
+        return;
+      }
       if (type == 'pdf_to_image') {
         _isPdfToImage = true;
         _pdfToImagePath = extra['filePath'] as String?;
@@ -143,6 +167,10 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       _startRealSplit();
     } else if (_isPdfToImage && _pdfToImagePath != null) {
       _startRealPdfToImage();
+    } else if (_isProtect && _protectInputPath != null) {
+      _startRealProtect();
+    } else if (_isUnlock && _protectInputPath != null) {
+      _startRealUnlock();
     } else {
       _startFakeTask();
     }
@@ -592,6 +620,178 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     });
   }
 
+  Future<void> _startRealProtect() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputDir = '${dir.path}/NextDoc/Protect_PDF/$timestamp';
+      await Directory(outputDir).create(recursive: true);
+      final outputName = '${_fileName.replaceAll('.pdf', '')}_protected.pdf';
+      final outputPath = '$outputDir/$outputName';
+
+      final result = await _pdfProtectionService.protectPdf(
+        inputPath: _protectInputPath!,
+        outputPath: outputPath,
+        password: _protectPassword!,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _taskProgress = TaskProgress(
+              progress: progress,
+              statusText: _protectStatusText(progress),
+              status: TaskStatus.running,
+            );
+          });
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = const TaskProgress(
+          progress: 1.0,
+          statusText: 'Complete',
+          status: TaskStatus.completed,
+        );
+      });
+      await _onProtectComplete(result);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = TaskProgress(
+          progress: 0,
+          statusText: 'Failed: ${e.toString()}',
+          status: TaskStatus.failed,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Protection failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  String _protectStatusText(double progress) {
+    if (progress < 0.2) return 'Reading PDF...';
+    if (progress < 0.4) return 'Applying encryption...';
+    if (progress < 0.7) return 'Saving protected PDF...';
+    if (progress < 1.0) return 'Finalizing...';
+    return 'Complete!';
+  }
+
+  Future<void> _onProtectComplete(ProtectionResult result) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    final isarService = IsarService.instance;
+    await isarService.saveRecentFile(RecentFileEntity(
+      fileName: result.fileName,
+      filePath: result.filePath,
+      fileSize: result.fileSize,
+      fileType: 'pdf',
+      createdAt: DateTime.now(),
+      pageCount: result.pageCount,
+    ));
+
+    if (!mounted) return;
+    refreshRecentFiles(ref);
+    if (!mounted) return;
+
+    context.pushReplacement('/success', extra: {
+      'type': 'protect',
+      'toolName': 'PDF Protection',
+      'filePath': result.filePath,
+      'fileName': result.fileName,
+      'fileSize': result.fileSize,
+      'pageCount': result.pageCount,
+      'saveFolder': 'NextDoc/Protect_PDF/',
+    });
+  }
+
+  Future<void> _startRealUnlock() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputDir = '${dir.path}/NextDoc/Protect_PDF/$timestamp';
+      await Directory(outputDir).create(recursive: true);
+      final outputName = '${_fileName.replaceAll('.pdf', '')}_unlocked.pdf';
+      final outputPath = '$outputDir/$outputName';
+
+      final result = await _pdfProtectionService.unlockPdf(
+        inputPath: _protectInputPath!,
+        outputPath: outputPath,
+        password: _protectPassword!,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _taskProgress = TaskProgress(
+              progress: progress,
+              statusText: _unlockStatusText(progress),
+              status: TaskStatus.running,
+            );
+          });
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = const TaskProgress(
+          progress: 1.0,
+          statusText: 'Complete',
+          status: TaskStatus.completed,
+        );
+      });
+      await _onUnlockComplete(result);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = TaskProgress(
+          progress: 0,
+          statusText: 'Failed: ${e.toString()}',
+          status: TaskStatus.failed,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unlock failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  String _unlockStatusText(double progress) {
+    if (progress < 0.1) return 'Reading PDF...';
+    if (progress < 0.5) return 'Decrypting pages...';
+    if (progress < 0.8) return 'Rebuilding document...';
+    if (progress < 1.0) return 'Saving...';
+    return 'Complete!';
+  }
+
+  Future<void> _onUnlockComplete(ProtectionResult result) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    final isarService = IsarService.instance;
+    await isarService.saveRecentFile(RecentFileEntity(
+      fileName: result.fileName,
+      filePath: result.filePath,
+      fileSize: result.fileSize,
+      fileType: 'pdf',
+      createdAt: DateTime.now(),
+      pageCount: result.pageCount,
+    ));
+
+    if (!mounted) return;
+    refreshRecentFiles(ref);
+    if (!mounted) return;
+
+    context.pushReplacement('/success', extra: {
+      'type': 'unlock',
+      'toolName': 'PDF Protection',
+      'filePath': result.filePath,
+      'fileName': result.fileName,
+      'fileSize': result.fileSize,
+      'pageCount': result.pageCount,
+      'saveFolder': 'NextDoc/Protect_PDF/',
+    });
+  }
+
   Future<void> _startFakeTask() async {
     _taskSubscription = _taskService.runFakeTask(label: _fileName).listen(
       (progress) {
@@ -641,6 +841,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     _compressService.cancel();
     _splitService.cancel();
     _pdfToImageService.cancel();
+    _pdfProtectionService.cancel();
     super.dispose();
   }
 
@@ -692,6 +893,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
                       _mergeService.cancel();
                       _compressService.cancel();
                       _splitService.cancel();
+                      _pdfProtectionService.cancel();
                       if (mounted) context.pop();
                     },
                     icon: const Icon(Icons.close_rounded, size: 18),

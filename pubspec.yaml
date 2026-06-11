@@ -29,6 +29,7 @@ dependencies:
   flutter_lucide: ^1.11.0
   shared_preferences: ^2.4.0
   gal: ^2.3.2
+  syncfusion_flutter_pdf: ^33.2.7
 
 dev_dependencies:
   flutter_test:
