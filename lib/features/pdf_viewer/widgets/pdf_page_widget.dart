@@ -59,14 +59,15 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
         return;
       }
       final screenWidth = MediaQuery.of(context).size.width;
-      final scale = page.width > 0 ? screenWidth / page.width : 1.0;
+      final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+      final targetWidth = screenWidth * pixelRatio * 1.5;
+      final scale = page.width > 0 ? targetWidth / page.width : 1.0;
       final renderW = (page.width * scale).toInt();
       final renderH = (page.height * scale).toInt();
       final image = await page.render(
         width: renderW.toDouble(),
         height: renderH.toDouble(),
-        format: PdfPageImageFormat.jpeg,
-        quality: 85,
+        format: PdfPageImageFormat.png,
       );
       if (!page.isClosed) await page.close();
       if (mounted && !widget.document.isClosed) {
@@ -93,6 +94,7 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
 
   @override
   void dispose() {
+    _imageBytes = null;
     super.dispose();
   }
 
@@ -157,7 +159,7 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
           child: Image.memory(
             _imageBytes!,
             fit: BoxFit.contain,
-            filterQuality: FilterQuality.medium,
+            filterQuality: FilterQuality.high,
           ),
         ),
       ),

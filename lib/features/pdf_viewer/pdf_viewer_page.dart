@@ -183,16 +183,17 @@ final class _PdfViewerPageState extends ConsumerState<PdfViewerPage> {
                           );
                         }
                         final totalPages = doc.pagesCount;
-                        return PageView.builder(
+                        return PageView.custom(
                           controller: _pageController,
-                          itemCount: totalPages,
-                          itemBuilder: (context, index) {
-                            return PdfPageWidget(
+                          childrenDelegate: SliverChildBuilderDelegate(
+                            (context, index) => PdfPageWidget(
                               document: doc,
                               pageIndex: index,
                               zoomLevel: viewerState.zoomLevel,
-                            );
-                          },
+                            ),
+                            childCount: totalPages,
+                            addAutomaticKeepAlives: false,
+                          ),
                         );
                       },
                       loading: () => const Center(
