@@ -337,7 +337,7 @@ final class _PdfFileCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final thumbnailAsync = ref.watch(pdfThumbnailProvider(item.path));
+    final thumbnailAsync = ref.watch(pageThumbnailProvider((item.path, 0)));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),

@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/file_action_service.dart';
+import '../../../core/services/image_action_service.dart';
 import '../../../core/theme/typography.dart';
 
 final class SuccessScreen extends StatelessWidget {
@@ -27,6 +28,11 @@ final class SuccessScreen extends StatelessWidget {
     String toolName = '';
     int originalSize = 0;
     int fileCount = 0;
+    String saveFolder = '';
+
+    String type = '';
+
+    List<String> imagePaths = [];
 
     if (extra is Map) {
       filePath = (extra['filePath'] as String?) ?? '';
@@ -36,6 +42,9 @@ final class SuccessScreen extends StatelessWidget {
       toolName = (extra['toolName'] as String?) ?? '';
       originalSize = (extra['originalSize'] as int?) ?? 0;
       fileCount = (extra['fileCount'] as int?) ?? 0;
+      type = (extra['type'] as String?) ?? '';
+      imagePaths = (extra['imagePaths'] as List?)?.cast<String>() ?? [];
+      saveFolder = (extra['saveFolder'] as String?) ?? '';
     }
 
     return Scaffold(
@@ -60,9 +69,9 @@ final class SuccessScreen extends StatelessWidget {
               ),
               const Spacer(),
               if (filePath.isNotEmpty)
-                _buildFileInfo(isLight, fileName, fileSize, pageCount, originalSize, fileCount),
+                _buildFileInfo(isLight, fileName, fileSize, pageCount, originalSize, fileCount, type),
               const Spacer(flex: 2),
-              _SuccessActions(filePath: filePath, fileName: fileName),
+               _SuccessActions(filePath: filePath, fileName: fileName, type: type, imagePaths: imagePaths, saveFolder: saveFolder),
               const SizedBox(height: AppSpacing.lg),
             ],
           ),
@@ -97,9 +106,11 @@ final class SuccessScreen extends StatelessWidget {
     int pageCount,
     int originalSize,
     int fileCount,
+    String type,
   ) {
+    final isPdfToImage = type == 'pdf_to_image';
     final isCompressed = originalSize > 0;
-    final isSplit = fileCount > 0;
+    final isSplit = fileCount > 0 && !isPdfToImage;
     final savings = isCompressed
         ? ((originalSize - fileSize) / originalSize * 100)
         : 0.0;
@@ -117,7 +128,11 @@ final class SuccessScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          if (isSplit) ...[
+          if (isPdfToImage) ...[
+            _infoRow(isLight, 'Images Created', '$pageCount'),
+            const SizedBox(height: AppSpacing.md),
+            _infoRow(isLight, 'Total Size', _formattedSize(fileSize)),
+          ] else if (isSplit) ...[
             _infoRow(isLight, 'Files Created', '$fileCount'),
             const SizedBox(height: AppSpacing.md),
             _infoRow(isLight, 'Total Pages', '$pageCount'),
@@ -178,10 +193,16 @@ final class SuccessScreen extends StatelessWidget {
 final class _SuccessActions extends StatefulWidget {
   final String filePath;
   final String fileName;
+  final String type;
+  final List<String> imagePaths;
+  final String saveFolder;
 
   const _SuccessActions({
     required this.filePath,
     required this.fileName,
+    this.type = '',
+    this.imagePaths = const [],
+    this.saveFolder = '',
   });
 
   @override
@@ -192,29 +213,58 @@ final class _SuccessActionsState extends State<_SuccessActions> {
   bool _isOpening = false;
   bool _isSharing = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.saveFolder.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final isImage = widget.type == 'pdf_to_image';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${isImage ? "JPG files" : "PDF file"} saved in ${widget.saveFolder}',
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      });
+    }
+  }
+
   Future<void> _openFile() async {
     setState(() => _isOpening = true);
-    await FileActionService.openPdf(context, widget.filePath);
+    if (widget.type == 'pdf_to_image') {
+      await ImageActionService.openImage(context, widget.filePath, widget.imagePaths);
+    } else {
+      await FileActionService.openPdf(context, widget.filePath);
+    }
     if (mounted) setState(() => _isOpening = false);
   }
 
   Future<void> _shareFile() async {
     setState(() => _isSharing = true);
-    await FileActionService.sharePdf(context, widget.filePath, widget.fileName);
+    if (widget.type == 'pdf_to_image') {
+      await ImageActionService.shareImages(context, widget.imagePaths);
+    } else {
+      await FileActionService.sharePdf(context, widget.filePath, widget.fileName);
+    }
     if (mounted) setState(() => _isSharing = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isPdfToImage = widget.type == 'pdf_to_image';
 
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           child: _ActionButton(
-            label: 'Open PDF',
-            icon: Icons.open_in_new_rounded,
+            label: isPdfToImage ? 'Open Images' : 'Open PDF',
+            icon: isPdfToImage ? Icons.image_rounded : Icons.open_in_new_rounded,
             isPrimary: true,
             isLoading: _isOpening,
             onTap: _openFile,
@@ -224,7 +274,7 @@ final class _SuccessActionsState extends State<_SuccessActions> {
         SizedBox(
           width: double.infinity,
           child: _ActionButton(
-            label: 'Share PDF',
+            label: isPdfToImage ? 'Share Images' : 'Share PDF',
             icon: Icons.share_rounded,
             isLoading: _isSharing,
             onTap: _shareFile,

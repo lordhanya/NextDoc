@@ -1,7 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:pdfx/pdfx.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_radius.dart';
+import '../../../core/theme/typography.dart';
 
 final class PdfPageWidget extends ConsumerStatefulWidget {
   final PdfDocument document;
@@ -23,6 +27,8 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
   Uint8List? _imageBytes;
   bool _isLoading = true;
   String? _error;
+  int _retryCount = 0;
+  static const int _maxRetries = 2;
 
   @override
   void initState() {
@@ -34,6 +40,7 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
   void didUpdateWidget(PdfPageWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.pageIndex != widget.pageIndex) {
+      _retryCount = 0;
       _renderPage();
     }
   }
@@ -48,7 +55,7 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
     try {
       final page = await widget.document.getPage(widget.pageIndex + 1);
       if (widget.document.isClosed || !mounted) {
-        await page.close();
+        if (!page.isClosed) await page.close();
         return;
       }
       final screenWidth = MediaQuery.of(context).size.width;
@@ -61,7 +68,7 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
         format: PdfPageImageFormat.jpeg,
         quality: 85,
       );
-      await page.close();
+      if (!page.isClosed) await page.close();
       if (mounted && !widget.document.isClosed) {
         setState(() {
           _imageBytes = image?.bytes;
@@ -78,6 +85,12 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
     }
   }
 
+  void _retry() {
+    if (_retryCount >= _maxRetries) return;
+    _retryCount++;
+    _renderPage();
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -85,6 +98,8 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(strokeWidth: 2));
     }
@@ -95,9 +110,36 @@ final class _PdfPageWidgetState extends ConsumerState<PdfPageWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+              Icon(
+                Icons.error_outline,
+                size: 40,
+                color: (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(120),
+              ),
               const SizedBox(height: 12),
-              Text('Failed to load page', style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                'Failed to load page',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
+                ),
+              ),
+              if (_retryCount < _maxRetries) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 36,
+                  child: OutlinedButton.icon(
+                    onPressed: _retry,
+                    icon: const Icon(LucideIcons.refresh_cw, size: 16),
+                    label: Text('Retry', style: AppTextStyles.buttonSmall),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: BorderSide(color: AppColors.primary.withAlpha(80)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

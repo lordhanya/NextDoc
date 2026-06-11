@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import '../providers/recent_files_provider.dart';
 import '../providers/search_provider.dart';
 import '../services/file_action_service.dart';
 import '../services/file_management_service.dart';
+import '../services/image_action_service.dart';
 import '../theme/typography.dart';
 import 'delete_confirm_dialog.dart';
 import 'empty_state_widget.dart';
@@ -97,7 +99,17 @@ final class _RecentFilesGrid extends ConsumerWidget {
       itemBuilder: (context, index) {
         final file = files[index];
         final heroTag = 'pdf_${file.id}';
-        final thumbnailAsync = ref.watch(pdfThumbnailProvider(file.filePath));
+        final isImage = file.fileType == 'image_export';
+
+        if (isImage) {
+          return _ImageFileCard(
+            file: file,
+            heroTag: heroTag,
+            query: query,
+          );
+        }
+
+        final thumbnailAsync = ref.watch(pageThumbnailProvider((file.filePath, 0)));
 
         return thumbnailAsync.when(
           data: (bytes) => _FileCard(
@@ -178,7 +190,32 @@ final class _RecentFileRow extends ConsumerWidget {
     required this.query,
   });
 
+  bool get _isImage => file.fileType == 'image_export';
+
   void _showFileActions(BuildContext context, WidgetRef ref) {
+    if (_isImage) {
+      showFileActionSheet(
+        context: context,
+        fileName: file.fileName,
+        filePath: file.filePath,
+        fileSize: file.fileSize,
+        pageCount: file.pageCount > 0 ? file.pageCount : 1,
+        isImageFile: true,
+        onOpen: () => ImageActionService.openImage(
+          context,
+          file.filePath,
+          [file.filePath],
+        ),
+        onShare: () => ImageActionService.shareImages(
+          context,
+          [file.filePath],
+        ),
+        onRename: () => {},
+        onDuplicate: () => {},
+        onDelete: () => _handleDelete(context, ref),
+      );
+      return;
+    }
     showFileActionSheet(
       context: context,
       fileName: file.fileName,
@@ -263,30 +300,42 @@ final class _RecentFileRow extends ConsumerWidget {
       backgroundColor: AppColors.primary.withAlpha(30),
     );
 
+    final iconBg = _isImage
+        ? AppColors.iconPdfToJpg.withAlpha(25)
+        : AppColors.primary.withAlpha(25);
+    final iconColor = _isImage ? AppColors.iconPdfToJpg : AppColors.primary;
+    final iconData = _isImage ? LucideIcons.image : LucideIcons.file_text;
+
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
-      onTap: () => context.push(
-        '/pdf-viewer',
-        extra: {
-          'filePath': file.filePath,
-          'fileName': file.fileName,
-          'fileSize': file.fileSize,
-          'pageCount': file.pageCount > 0 ? file.pageCount : 1,
-          'heroTag': 'pdf_list_${file.id}',
-        },
-      ),
+      onTap: _isImage
+          ? () => ImageActionService.openImage(
+                context,
+                file.filePath,
+                [file.filePath],
+              )
+          : () => context.push(
+                '/pdf-viewer',
+                extra: {
+                  'filePath': file.filePath,
+                  'fileName': file.fileName,
+                  'fileSize': file.fileSize,
+                  'pageCount': file.pageCount > 0 ? file.pageCount : 1,
+                  'heroTag': 'pdf_list_${file.id}',
+                },
+              ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(25),
+              color: iconBg,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: const Icon(
-              LucideIcons.file_text,
+            child: Icon(
+              iconData,
               size: 22,
-              color: AppColors.primary,
+              color: iconColor,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -318,7 +367,9 @@ final class _RecentFileRow extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(right: AppSpacing.sm),
               child: Text(
-                '${file.pageCount} pg',
+                _isImage
+                    ? '${file.pageCount} img'
+                    : '${file.pageCount} pg',
                 style: AppTextStyles.label,
               ),
             ),
@@ -455,6 +506,147 @@ final class _FileCard extends ConsumerWidget {
             'heroTag': heroTag,
           },
         ),
+      ),
+    );
+  }
+}
+
+final class _ImageFileCard extends ConsumerWidget {
+  final RecentFileEntity file;
+  final String heroTag;
+  final String query;
+
+  const _ImageFileCard({
+    required this.file,
+    required this.heroTag,
+    required this.query,
+  });
+
+  String _formattedSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  void _showFileActions(BuildContext context, WidgetRef ref) {
+    showFileActionSheet(
+      context: context,
+      fileName: file.fileName,
+      filePath: file.filePath,
+      fileSize: file.fileSize,
+      pageCount: file.pageCount > 0 ? file.pageCount : 1,
+      isImageFile: true,
+      onOpen: () => ImageActionService.openImage(
+        context,
+        file.filePath,
+        [file.filePath],
+      ),
+      onShare: () => ImageActionService.shareImages(
+        context,
+        [file.filePath],
+      ),
+      onRename: () => {},
+      onDuplicate: () => {},
+      onDelete: () => _handleDelete(context, ref),
+    );
+  }
+
+  Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDeleteConfirmDialog(
+      context: context,
+      fileName: file.fileName,
+      filePath: file.filePath,
+    );
+    if (confirmed) {
+      refreshRecentFiles(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image export deleted')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final captionStyle = DefaultTextStyle.of(context).style.merge(AppTextStyles.caption);
+    final captionHighlight = captionStyle.copyWith(
+      color: AppColors.primary,
+      backgroundColor: AppColors.primary.withAlpha(30),
+    );
+
+    return RepaintBoundary(
+      child: GestureDetector(
+        onLongPress: () => _showFileActions(context, ref),
+        child: GlassCard(
+          onTap: () => ImageActionService.openImage(
+            context,
+            file.filePath,
+            [file.filePath],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Hero(
+                  tag: heroTag,
+                  child: SizedBox(
+                    height: 140,
+                    width: double.infinity,
+                    child: Image.file(
+                      File(file.filePath),
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.medium,
+                      errorBuilder: (_, __, ___) => _imagePlaceholder(isLight),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              RichText(
+                text: highlightText(
+                  file.fileName,
+                  query,
+                  captionStyle,
+                  captionHighlight,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Row(
+                children: [
+                  Text(
+                    '${file.pageCount} image${file.pageCount > 1 ? "s" : ""}',
+                    style: AppTextStyles.label,
+                  ),
+                  const Spacer(),
+                  Text(_formattedSize(file.fileSize), style: AppTextStyles.label),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder(bool isLight) {
+    final bg = isLight ? AppColors.lightSurface2 : AppColors.darkSurface2;
+    final icon = isLight
+        ? AppColors.lightTextMuted.withAlpha(100)
+        : AppColors.darkTextMuted.withAlpha(100);
+    return Container(
+      color: bg,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(LucideIcons.image, size: 36, color: icon),
+          const SizedBox(height: AppSpacing.xs),
+          Text('Image', style: AppTextStyles.label),
+        ],
       ),
     );
   }

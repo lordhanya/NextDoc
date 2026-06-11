@@ -171,7 +171,7 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
   }
 
   Widget _buildFileInfo(bool isLight) {
-    final thumbnailAsync = ref.watch(pdfThumbnailProvider(_filePath!));
+    final thumbnailAsync = ref.watch(pageThumbnailProvider((_filePath!, 0)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

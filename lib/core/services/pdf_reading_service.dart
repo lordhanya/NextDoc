@@ -14,10 +14,14 @@ final class PdfReadingService {
   }
 
   Map<String, int> _getAll() {
-    final raw = _prefs?.getString(_key);
-    if (raw == null) return {};
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    return decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
+    try {
+      final raw = _prefs?.getString(_key);
+      if (raw == null) return {};
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
+    } catch (_) {
+      return {};
+    }
   }
 
   int? getLastPage(String filePath) {
@@ -25,8 +29,12 @@ final class PdfReadingService {
   }
 
   Future<void> saveLastPage(String filePath, int page) async {
-    final all = _getAll();
-    all[filePath] = page;
-    await _prefs?.setString(_key, jsonEncode(all));
+    try {
+      final all = _getAll();
+      all[filePath] = page;
+      await _prefs?.setString(_key, jsonEncode(all));
+    } catch (_) {
+      // Silently fail — reading position is non-critical
+    }
   }
 }

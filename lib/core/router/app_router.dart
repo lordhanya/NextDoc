@@ -8,6 +8,7 @@ import '../../features/tools/screens/merge_pdf_screen.dart';
 import '../../features/tools/screens/compress_pdf_screen.dart';
 import '../../features/tools/screens/image_to_pdf_screen.dart';
 import '../../features/tools/screens/split_pdf_screen.dart';
+import '../../features/tools/screens/pdf_to_image_screen.dart';
 import '../../features/tools/screens/processing_screen.dart';
 import '../../features/tools/screens/success_screen.dart';
 import '../../features/pdf_viewer/pdf_viewer_page.dart';
@@ -120,6 +121,14 @@ abstract final class AppRouter {
           context,
           state,
           const SplitPdfScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/tools/pdf-to-image',
+        pageBuilder: (context, state) => _slideUpTransition(
+          context,
+          state,
+          const PdfToImageScreen(),
         ),
       ),
       GoRoute(

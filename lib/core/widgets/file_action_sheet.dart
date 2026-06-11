@@ -20,6 +20,7 @@ void showFileActionSheet({
   required FileActionCallback onDelete,
   bool showOpen = true,
   bool showShare = true,
+  bool isImageFile = false,
 }) {
   showModalBottomSheet(
     context: context,
@@ -36,6 +37,7 @@ void showFileActionSheet({
       onDelete: onDelete,
       showOpen: showOpen,
       showShare: showShare,
+      isImageFile: isImageFile,
     ),
   );
 }
@@ -54,6 +56,7 @@ final class _FileActionSheet extends StatelessWidget {
   final FileActionCallback onDelete;
   final bool showOpen;
   final bool showShare;
+  final bool isImageFile;
 
   const _FileActionSheet({
     required this.fileName,
@@ -67,6 +70,7 @@ final class _FileActionSheet extends StatelessWidget {
     required this.onDelete,
     required this.showOpen,
     required this.showShare,
+    this.isImageFile = false,
   });
 
   @override
@@ -102,10 +106,22 @@ final class _FileActionSheet extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               Divider(color: divider, height: 1),
               const SizedBox(height: AppSpacing.sm),
-              if (showOpen) _ActionTile(icon: LucideIcons.eye, label: 'Open', onTap: onOpen, textPrimary: textPrimary),
-              if (showShare) _ActionTile(icon: LucideIcons.share_2, label: 'Share', onTap: onShare, textPrimary: textPrimary),
-              _ActionTile(icon: LucideIcons.pencil, label: 'Rename', onTap: onRename, textPrimary: textPrimary),
-              _ActionTile(icon: LucideIcons.copy, label: 'Duplicate', onTap: onDuplicate, textPrimary: textPrimary),
+              if (showOpen) _ActionTile(
+                icon: isImageFile ? LucideIcons.image : LucideIcons.eye,
+                label: isImageFile ? 'Open Images' : 'Open',
+                onTap: onOpen,
+                textPrimary: textPrimary,
+              ),
+              if (showShare) _ActionTile(
+                icon: isImageFile ? LucideIcons.image : LucideIcons.share_2,
+                label: isImageFile ? 'Share Images' : 'Share',
+                onTap: onShare,
+                textPrimary: textPrimary,
+              ),
+              if (!isImageFile)
+                _ActionTile(icon: LucideIcons.pencil, label: 'Rename', onTap: onRename, textPrimary: textPrimary),
+              if (!isImageFile)
+                _ActionTile(icon: LucideIcons.copy, label: 'Duplicate', onTap: onDuplicate, textPrimary: textPrimary),
               const SizedBox(height: AppSpacing.xs),
               Divider(color: divider, height: 1),
               const SizedBox(height: AppSpacing.xs),
@@ -163,7 +179,9 @@ final class _FileActionSheet extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xxs),
               Text(
-                '$pageCount page${pageCount > 1 ? 's' : ''}',
+                isImageFile
+                    ? '$pageCount image${pageCount > 1 ? "s" : ""}'
+                    : '$pageCount page${pageCount > 1 ? "s" : ""}',
                 style: AppTextStyles.caption,
               ),
             ],

@@ -39,6 +39,13 @@ final class ToolsPage extends StatelessWidget {
       route: '/tools/split',
       color: AppColors.iconSplit,
     ),
+    _ToolInfo(
+      icon: LucideIcons.file_image,
+      label: 'PDF to JPG',
+      description: 'Export PDF pages as JPG images',
+      route: '/tools/pdf-to-image',
+      color: AppColors.iconPdfToJpg,
+    ),
   ];
 
   @override

@@ -28,6 +28,7 @@ dependencies:
   open_filex: ^4.7.0
   flutter_lucide: ^1.11.0
   shared_preferences: ^2.4.0
+  gal: ^2.3.2
 
 dev_dependencies:
   flutter_test:

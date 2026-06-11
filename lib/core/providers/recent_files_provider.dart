@@ -29,9 +29,10 @@ final recentFilesCountProvider = Provider<int>((ref) {
   return files.valueOrNull?.length ?? 0;
 });
 
-final pdfThumbnailProvider = FutureProvider.family<Uint8List?, String>((ref, filePath) async {
+final pageThumbnailProvider = FutureProvider.family<Uint8List?, (String filePath, int pageIndex)>((ref, params) async {
+  final (filePath, pageIndex) = params;
   final pdfService = ref.watch(pdfServiceProvider);
-  return pdfService.getThumbnail(filePath);
+  return pdfService.getThumbnail(filePath, page: pageIndex);
 });
 
 final pdfMetadataProvider = FutureProvider.family<PdfMetadata?, String>((ref, filePath) async {

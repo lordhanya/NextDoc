@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_radius.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/theme/typography.dart';
 import '../../core/services/pdf_reading_service.dart';
 import 'providers/pdf_controller_provider.dart';
 import 'providers/pdf_document_provider.dart';
@@ -157,13 +159,19 @@ final class _PdfViewerPageState extends ConsumerState<PdfViewerPage> {
                     child: docAsync.when(
                       data: (doc) {
                         if (doc == null || doc.isClosed) {
-                          return Center(
-                            child: Text(
-                              'Unable to load document',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
-                              ),
-                            ),
+                          return _EmptyStateView(
+                            icon: LucideIcons.file_x,
+                            title: 'Document Unavailable',
+                            subtitle: 'The document is no longer accessible.',
+                            isLight: isLight,
+                          );
+                        }
+                        if (doc.pagesCount <= 0) {
+                          return _EmptyStateView(
+                            icon: LucideIcons.file_text,
+                            title: 'Empty Document',
+                            subtitle: 'This PDF contains no pages.',
+                            isLight: isLight,
                           );
                         }
                         final totalPages = doc.pagesCount;
@@ -182,35 +190,14 @@ final class _PdfViewerPageState extends ConsumerState<PdfViewerPage> {
                       loading: () => const Center(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      error: (err, _) => Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.picture_as_pdf_rounded,
-                                size: 64,
-                                color: (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(80),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Failed to open PDF',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                err.toString(),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
+                      error: (err, _) => _LoadErrorView(
+                        error: err,
+                        filePath: widget.filePath,
+                        isLight: isLight,
+                        onRetry: () {
+                          ref.invalidate(pdfDocumentProvider(widget.filePath));
+                          _didRestorePage = false;
+                        },
                       ),
                     ),
                   ),
@@ -433,6 +420,121 @@ final class _JumpToPageDialogState extends State<_JumpToPageDialog> {
           child: const Text('Go', style: TextStyle(color: AppColors.onPrimary)),
         ),
       ],
+    );
+  }
+}
+
+final class _LoadErrorView extends StatelessWidget {
+  final Object error;
+  final String filePath;
+  final bool isLight;
+  final VoidCallback onRetry;
+
+  const _LoadErrorView({
+    required this.error,
+    required this.filePath,
+    required this.isLight,
+    required this.onRetry,
+  });
+
+  String get _title {
+    if (error is PdfDocumentException) return (error as PdfDocumentException).title;
+    return 'Failed to Open PDF';
+  }
+
+  String get _description {
+    if (error is PdfDocumentException) return (error as PdfDocumentException).description;
+    return 'An unexpected error occurred.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              LucideIcons.file_x,
+              size: 56,
+              color: (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(100),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              _title,
+              style: AppTextStyles.title.copyWith(
+                color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _description,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(LucideIcons.refresh_cw, size: 18),
+              label: const Text('Try Again'),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _EmptyStateView extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool isLight;
+
+  const _EmptyStateView({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.isLight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(80),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title,
+              style: AppTextStyles.body.copyWith(
+                color: isLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              subtitle,
+              style: AppTextStyles.caption.copyWith(
+                color: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -14,6 +14,8 @@ import '../../../core/services/compress_pdf_service.dart';
 import '../../../core/services/image_to_pdf_service.dart';
 import '../../../core/services/merge_pdf_service.dart';
 import '../../../core/services/split_pdf_service.dart';
+import '../../../core/services/pdf_to_image_service.dart';
+import '../../../core/services/settings_service.dart';
 import '../../../core/services/task_service.dart';
 import '../../../core/theme/typography.dart';
 
@@ -30,6 +32,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   final _mergeService = MergePdfService();
   final _compressService = CompressPdfService();
   final _splitService = SplitPdfService();
+  final _pdfToImageService = PdfToImageService();
   StreamSubscription<TaskProgress>? _taskSubscription;
   StreamSubscription<double>? _realSubscription;
   TaskProgress _taskProgress = const TaskProgress();
@@ -40,6 +43,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   bool _isMerge = false;
   bool _isCompress = false;
   bool _isSplit = false;
+  bool _isPdfToImage = false;
   List<String> _imagePaths = [];
   List<String> _mergePaths = [];
   String? _compressPath;
@@ -49,6 +53,9 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   String? _splitPath;
   List<int> _selectedPages = [];
   SplitMode _splitMode = SplitMode.extract;
+  String? _pdfToImagePath;
+  List<int> _pdfToImageSelectedPages = [];
+  ExportQuality _pdfToImageQuality = ExportQuality.standard;
 
   @override
   void initState() {
@@ -106,6 +113,18 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         );
         return;
       }
+      if (type == 'pdf_to_image') {
+        _isPdfToImage = true;
+        _pdfToImagePath = extra['filePath'] as String?;
+        _fileName = extra['fileName'] as String? ?? 'document.pdf';
+        _pdfToImageSelectedPages = List<int>.from(extra['selectedPages'] as List);
+        final qualityName = extra['exportQuality'] as String? ?? 'standard';
+        _pdfToImageQuality = ExportQuality.values.firstWhere(
+          (e) => e.name == qualityName,
+          orElse: () => ExportQuality.standard,
+        );
+        return;
+      }
     }
     if (extra is SelectedFileModel) {
       _fileData = extra;
@@ -122,6 +141,8 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       _startRealCompress();
     } else if (_isSplit && _splitPath != null) {
       _startRealSplit();
+    } else if (_isPdfToImage && _pdfToImagePath != null) {
+      _startRealPdfToImage();
     } else {
       _startFakeTask();
     }
@@ -130,7 +151,10 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   Future<void> _startRealConversion() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final outputPath = '${dir.path}/$_fileName';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputDir = '${dir.path}/NextDoc/Image_to_PDF/$timestamp';
+      await Directory(outputDir).create(recursive: true);
+      final outputPath = '$outputDir/$_fileName';
 
       await _imageToPdfService.convert(
         imagePaths: _imagePaths,
@@ -206,13 +230,17 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileName': _fileName,
       'fileSize': fileSize,
       'pageCount': _imagePaths.length,
+      'saveFolder': 'NextDoc/Image_to_PDF/',
     });
   }
 
   Future<void> _startRealMerge() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final outputPath = '${dir.path}/$_fileName';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputDir = '${dir.path}/NextDoc/Merge_PDF/$timestamp';
+      await Directory(outputDir).create(recursive: true);
+      final outputPath = '$outputDir/$_fileName';
 
       await _mergeService.mergePdfs(
         inputPaths: _mergePaths,
@@ -292,13 +320,17 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileName': _fileName,
       'fileSize': fileSize,
       'pageCount': pageCount,
+      'saveFolder': 'NextDoc/Merge_PDF/',
     });
   }
 
   Future<void> _startRealCompress() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final outputPath = '${dir.path}/$_fileName';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputDir = '${dir.path}/NextDoc/Compress_PDF/$timestamp';
+      await Directory(outputDir).create(recursive: true);
+      final outputPath = '$outputDir/$_fileName';
 
       await _compressService.compressPdf(
         inputPath: _compressPath!,
@@ -377,6 +409,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileSize': compressedSize,
       'pageCount': _pageCount ?? 0,
       'originalSize': _originalSize,
+      'saveFolder': 'NextDoc/Compress_PDF/',
     });
   }
 
@@ -385,10 +418,13 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   Future<void> _startRealSplit() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputDirPath = '${dir.path}/NextDoc/Split_PDF/$timestamp';
+      await Directory(outputDirPath).create(recursive: true);
 
       final result = await _splitService.splitPdf(
         inputPath: _splitPath!,
-        outputDir: dir.path,
+        outputDir: outputDirPath,
         selectedPageIndices: _selectedPages,
         mode: _splitMode,
         onProgress: (progress) {
@@ -470,6 +506,89 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileSize': result?.totalSize ?? 0,
       'fileCount': result?.fileCount ?? 0,
       'pageCount': result?.totalPages ?? _selectedPages.length,
+      'saveFolder': 'NextDoc/Split_PDF/',
+    });
+  }
+
+  Future<void> _startRealPdfToImage() async {
+    try {
+      final service = _pdfToImageService;
+      final result = await service.convert(
+        filePath: _pdfToImagePath!,
+        selectedPages: _pdfToImageSelectedPages,
+        quality: _pdfToImageQuality,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _taskProgress = TaskProgress(
+              progress: progress,
+              statusText: _pdfToImageStatusText(progress),
+              status: TaskStatus.running,
+            );
+          });
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = const TaskProgress(
+          progress: 1.0,
+          statusText: 'Complete',
+          status: TaskStatus.completed,
+        );
+      });
+      await _onPdfToImageComplete(result);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _taskProgress = TaskProgress(
+          progress: 0,
+          statusText: 'Failed: ${e.toString()}',
+          status: TaskStatus.failed,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  String _pdfToImageStatusText(double progress) {
+    if (progress < 0.2) return 'Reading PDF...';
+    if (progress < 0.5) return 'Rendering pages...';
+    if (progress < 0.8) return 'Exporting images...';
+    if (progress < 1.0) return 'Finalizing...';
+    return 'Complete!';
+  }
+
+  Future<void> _onPdfToImageComplete(PdfToImageResult result) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    final isarService = IsarService.instance;
+    await isarService.saveRecentFile(RecentFileEntity(
+      fileName: '${_fileName.replaceAll('.pdf', '')}_images',
+      filePath: result.imagePaths.isNotEmpty ? result.imagePaths.first : result.outputDir,
+      fileSize: result.totalSize,
+      fileType: 'image_export',
+      createdAt: DateTime.now(),
+      pageCount: result.imageCount,
+    ));
+
+    if (!mounted) return;
+    refreshRecentFiles(ref);
+    if (!mounted) return;
+
+    context.pushReplacement('/success', extra: {
+      'type': 'pdf_to_image',
+      'toolName': 'PDF to JPG',
+      'filePath': result.imagePaths.isNotEmpty ? result.imagePaths.first : result.outputDir,
+      'fileName': '${_fileName.replaceAll('.pdf', '')}_images',
+      'fileSize': result.totalSize,
+      'fileCount': result.imageCount,
+      'pageCount': result.imageCount,
+      'imagePaths': result.imagePaths,
+      'saveFolder': 'NextDoc/PDF_to_JPG/',
     });
   }
 
@@ -521,6 +640,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
     _mergeService.cancel();
     _compressService.cancel();
     _splitService.cancel();
+    _pdfToImageService.cancel();
     super.dispose();
   }
 
