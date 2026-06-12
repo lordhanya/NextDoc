@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/database/isar_service.dart';
@@ -17,6 +16,7 @@ import '../../../core/services/split_pdf_service.dart';
 import '../../../core/services/pdf_to_image_service.dart';
 import '../../../core/services/pdf_protection_service.dart';
 import '../../../core/services/settings_service.dart';
+import '../../../core/services/file_storage_service.dart';
 import '../../../core/services/task_service.dart';
 import '../../../core/theme/typography.dart';
 
@@ -178,11 +178,8 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
 
   Future<void> _startRealConversion() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputDir = '${dir.path}/NextDoc/Image_to_PDF/$timestamp';
-      await Directory(outputDir).create(recursive: true);
-      final outputPath = '$outputDir/$_fileName';
+      final tempDir = await FileStorageService.createTempDir('Image_to_PDF');
+      final outputPath = '${tempDir.path}/$_fileName';
 
       await _imageToPdfService.convert(
         imagePaths: _imagePaths,
@@ -200,6 +197,13 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       );
 
       if (!mounted) return;
+      final finalPath = await FileStorageService().copyToDownloads(
+        sourcePath: outputPath,
+        fileName: _fileName,
+        toolFolder: 'Image_to_PDF',
+      );
+
+      if (!mounted) return;
       setState(() {
         _taskProgress = const TaskProgress(
           progress: 1.0,
@@ -207,7 +211,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
           status: TaskStatus.completed,
         );
       });
-      await _onRealComplete(outputPath);
+      await _onRealComplete(finalPath);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -258,17 +262,14 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileName': _fileName,
       'fileSize': fileSize,
       'pageCount': _imagePaths.length,
-      'saveFolder': 'NextDoc/Image_to_PDF/',
+      'saveFolder': 'Downloads/NextDoc/Image_to_PDF/',
     });
   }
 
   Future<void> _startRealMerge() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputDir = '${dir.path}/NextDoc/Merge_PDF/$timestamp';
-      await Directory(outputDir).create(recursive: true);
-      final outputPath = '$outputDir/$_fileName';
+      final tempDir = await FileStorageService.createTempDir('Merge_PDF');
+      final outputPath = '${tempDir.path}/$_fileName';
 
       await _mergeService.mergePdfs(
         inputPaths: _mergePaths,
@@ -286,6 +287,13 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       );
 
       if (!mounted) return;
+      final finalPath = await FileStorageService().copyToDownloads(
+        sourcePath: outputPath,
+        fileName: _fileName,
+        toolFolder: 'Merge_PDF',
+      );
+
+      if (!mounted) return;
       setState(() {
         _taskProgress = const TaskProgress(
           progress: 1.0,
@@ -293,7 +301,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
           status: TaskStatus.completed,
         );
       });
-      await _onMergeComplete(outputPath);
+      await _onMergeComplete(finalPath);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -348,17 +356,14 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileName': _fileName,
       'fileSize': fileSize,
       'pageCount': pageCount,
-      'saveFolder': 'NextDoc/Merge_PDF/',
+      'saveFolder': 'Downloads/NextDoc/Merge_PDF/',
     });
   }
 
   Future<void> _startRealCompress() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputDir = '${dir.path}/NextDoc/Compress_PDF/$timestamp';
-      await Directory(outputDir).create(recursive: true);
-      final outputPath = '$outputDir/$_fileName';
+      final tempDir = await FileStorageService.createTempDir('Compress_PDF');
+      final outputPath = '${tempDir.path}/$_fileName';
 
       await _compressService.compressPdf(
         inputPath: _compressPath!,
@@ -377,6 +382,13 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       );
 
       if (!mounted) return;
+      final finalPath = await FileStorageService().copyToDownloads(
+        sourcePath: outputPath,
+        fileName: _fileName,
+        toolFolder: 'Compress_PDF',
+      );
+
+      if (!mounted) return;
       setState(() {
         _taskProgress = const TaskProgress(
           progress: 1.0,
@@ -384,7 +396,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
           status: TaskStatus.completed,
         );
       });
-      await _onCompressComplete(outputPath);
+      await _onCompressComplete(finalPath);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -437,7 +449,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileSize': compressedSize,
       'pageCount': _pageCount ?? 0,
       'originalSize': _originalSize,
-      'saveFolder': 'NextDoc/Compress_PDF/',
+      'saveFolder': 'Downloads/NextDoc/Compress_PDF/',
     });
   }
 
@@ -445,14 +457,11 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
 
   Future<void> _startRealSplit() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputDirPath = '${dir.path}/NextDoc/Split_PDF/$timestamp';
-      await Directory(outputDirPath).create(recursive: true);
+      final tempDir = await FileStorageService.createTempDir('Split_PDF');
 
       final result = await _splitService.splitPdf(
         inputPath: _splitPath!,
-        outputDir: outputDirPath,
+        outputDir: tempDir.path,
         selectedPageIndices: _selectedPages,
         mode: _splitMode,
         onProgress: (progress) {
@@ -466,7 +475,24 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
           });
         },
       );
-      _splitResult = result;
+
+      if (!mounted) return;
+      final storage = FileStorageService();
+      final updatedFiles = <SplitFile>[];
+      for (final file in result.files) {
+        final finalPath = await storage.copyToDownloads(
+          sourcePath: file.filePath,
+          fileName: file.fileName,
+          toolFolder: 'Split_PDF',
+        );
+        updatedFiles.add(SplitFile(
+          filePath: finalPath,
+          fileName: file.fileName,
+          fileSize: file.fileSize,
+          pageCount: file.pageCount,
+        ));
+      }
+      _splitResult = SplitResult(files: updatedFiles);
 
       if (!mounted) return;
       setState(() {
@@ -534,7 +560,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileSize': result?.totalSize ?? 0,
       'fileCount': result?.fileCount ?? 0,
       'pageCount': result?.totalPages ?? _selectedPages.length,
-      'saveFolder': 'NextDoc/Split_PDF/',
+      'saveFolder': 'Downloads/NextDoc/Split_PDF/',
     });
   }
 
@@ -558,6 +584,26 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       );
 
       if (!mounted) return;
+      // Copy images to Downloads
+      final storage = FileStorageService();
+      final downloadPaths = <String>[];
+      for (final path in result.imagePaths) {
+        final fileName = path.split('/').last;
+        final finalPath = await storage.copyToDownloads(
+          sourcePath: path,
+          fileName: fileName,
+          toolFolder: 'PDF_to_JPG',
+        );
+        downloadPaths.add(finalPath);
+      }
+      final updatedResult = PdfToImageResult(
+        outputDir: downloadPaths.isNotEmpty ? downloadPaths.first : result.outputDir,
+        imagePaths: downloadPaths.isEmpty ? result.imagePaths : downloadPaths,
+        totalSize: result.totalSize,
+        imageCount: result.imageCount,
+      );
+
+      if (!mounted) return;
       setState(() {
         _taskProgress = const TaskProgress(
           progress: 1.0,
@@ -565,7 +611,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
           status: TaskStatus.completed,
         );
       });
-      await _onPdfToImageComplete(result);
+      await _onPdfToImageComplete(updatedResult);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -616,18 +662,15 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileCount': result.imageCount,
       'pageCount': result.imageCount,
       'imagePaths': result.imagePaths,
-      'saveFolder': 'NextDoc/PDF_to_JPG/',
+      'saveFolder': 'Downloads/NextDoc/PDF_to_JPG/',
     });
   }
 
   Future<void> _startRealProtect() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputDir = '${dir.path}/NextDoc/Protect_PDF/$timestamp';
-      await Directory(outputDir).create(recursive: true);
       final outputName = '${_fileName.replaceAll('.pdf', '')}_protected.pdf';
-      final outputPath = '$outputDir/$outputName';
+      final tempDir = await FileStorageService.createTempDir('Protect_PDF');
+      final outputPath = '${tempDir.path}/$outputName';
 
       final result = await _pdfProtectionService.protectPdf(
         inputPath: _protectInputPath!,
@@ -646,6 +689,20 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       );
 
       if (!mounted) return;
+      final finalPath = await FileStorageService().copyToDownloads(
+        sourcePath: result.filePath,
+        fileName: result.fileName,
+        toolFolder: 'Protect_PDF',
+      );
+      final updatedResult = ProtectionResult(
+        filePath: finalPath,
+        fileName: result.fileName,
+        fileSize: result.fileSize,
+        pageCount: result.pageCount,
+        mode: result.mode,
+      );
+
+      if (!mounted) return;
       setState(() {
         _taskProgress = const TaskProgress(
           progress: 1.0,
@@ -653,7 +710,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
           status: TaskStatus.completed,
         );
       });
-      await _onProtectComplete(result);
+      await _onProtectComplete(updatedResult);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -702,18 +759,15 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileName': result.fileName,
       'fileSize': result.fileSize,
       'pageCount': result.pageCount,
-      'saveFolder': 'NextDoc/Protect_PDF/',
+      'saveFolder': 'Downloads/NextDoc/Protect_PDF/',
     });
   }
 
   Future<void> _startRealUnlock() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputDir = '${dir.path}/NextDoc/Protect_PDF/$timestamp';
-      await Directory(outputDir).create(recursive: true);
       final outputName = '${_fileName.replaceAll('.pdf', '')}_unlocked.pdf';
-      final outputPath = '$outputDir/$outputName';
+      final tempDir = await FileStorageService.createTempDir('Protect_PDF');
+      final outputPath = '${tempDir.path}/$outputName';
 
       final result = await _pdfProtectionService.unlockPdf(
         inputPath: _protectInputPath!,
@@ -732,6 +786,20 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       );
 
       if (!mounted) return;
+      final finalPath = await FileStorageService().copyToDownloads(
+        sourcePath: result.filePath,
+        fileName: result.fileName,
+        toolFolder: 'Protect_PDF',
+      );
+      final updatedResult = ProtectionResult(
+        filePath: finalPath,
+        fileName: result.fileName,
+        fileSize: result.fileSize,
+        pageCount: result.pageCount,
+        mode: result.mode,
+      );
+
+      if (!mounted) return;
       setState(() {
         _taskProgress = const TaskProgress(
           progress: 1.0,
@@ -739,7 +807,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
           status: TaskStatus.completed,
         );
       });
-      await _onUnlockComplete(result);
+      await _onUnlockComplete(updatedResult);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -788,7 +856,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileName': result.fileName,
       'fileSize': result.fileSize,
       'pageCount': result.pageCount,
-      'saveFolder': 'NextDoc/Protect_PDF/',
+      'saveFolder': 'Downloads/NextDoc/Protect_PDF/',
     });
   }
 

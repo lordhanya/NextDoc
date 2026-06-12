@@ -28,6 +28,16 @@ subprojects {
             }
         }
     }
+
+    // Flutter plugins (isar_flutter_libs 3.1.0+1) hardcode compileSdk=30,
+    // which can't resolve android:attr/lStar from AndroidX on API 31+.
+    // afterEvaluate runs after the plugin's own build.gradle, so ours wins.
+    afterEvaluate {
+        val androidExt = project.extensions.findByName("android")
+        if (androidExt is LibraryExtension) {
+            androidExt.compileSdk = 35
+        }
+    }
 }
 
 subprojects {

@@ -48,9 +48,9 @@ final class PdfToImageService {
         ExportQuality.smallSize => (40, 800.0),
       };
 
-      final appDir = await getApplicationDocumentsDirectory();
+      final tempDir = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final sourceDir = '${appDir.path}/NextDoc/PDF_to_JPG/$timestamp';
+      final sourceDir = '${tempDir.path}/nextdoc_PDF_to_JPG_$timestamp';
       await Directory(sourceDir).create(recursive: true);
 
       final imagePaths = <String>[];
