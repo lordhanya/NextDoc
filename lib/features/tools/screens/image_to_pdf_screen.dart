@@ -3,12 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:image/image.dart' as img;
+import 'package:pdf/pdf.dart' hide PdfDocument;
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdfx/pdfx.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/models/selected_file_model.dart';
 import '../../../core/services/file_picker_service.dart';
+import '../../../core/services/metadata_service.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../editor_studio/models/editor_result.dart';
+import '../../editor_studio/screens/unified_editor_screen.dart';
 
 final class ImageToPdfScreen extends ConsumerStatefulWidget {
   const ImageToPdfScreen({super.key});
@@ -22,19 +30,57 @@ final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
   final _images = <_ImageItem>[];
 
   Future<void> _pickImages() async {
-    final files = await _filePicker.pickImages();
+    debugPrint('=== JPG→PDF Picker ===');
+    debugPrint('Picker opened');
+    debugPrint('Picker type: FileType.image');
+    debugPrint('Allowed extensions: none (built-in image filter)');
+    List<SelectedFileModel> files;
+    try {
+      files = await _filePicker.pickImages();
+      debugPrint('Selected file count: ${files.length}');
+    } catch (e) {
+      debugPrint('Picker threw exception: $e');
+      return;
+    }
     if (!mounted) return;
-    if (files.isEmpty) return;
+    if (files.isEmpty) {
+      debugPrint('Picker returned empty (user cancelled or error)');
+      return;
+    }
 
-    setState(() {
-      for (final file in files) {
-        _images.add(_ImageItem(
-          path: file.filePath,
-          name: file.fileName,
-          size: file.fileSize,
-        ));
+    final tempDir = Directory.systemTemp;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    debugPrint('Resolving paths for ${files.length} images');
+    final items = <_ImageItem>[];
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
+      var resolvedPath = file.filePath;
+      var resolvedName = file.fileName;
+      var resolvedSize = file.fileSize;
+
+      if ((resolvedPath.isEmpty || !File(resolvedPath).existsSync()) && file.bytes != null) {
+        final ext = file.fileType.isNotEmpty ? '.${file.fileType}' : '.jpg';
+        resolvedName = resolvedName.isNotEmpty ? resolvedName : 'image_$i$ext';
+        resolvedPath = '${tempDir.path}/nextdoc_img_${timestamp}_$i$ext';
+        await File(resolvedPath).writeAsBytes(file.bytes!);
+        resolvedSize = file.bytes!.length;
+        debugPrint('  Wrote bytes -> $resolvedPath ($resolvedSize bytes)');
       }
+
+      debugPrint('  file: path=$resolvedPath, name=$resolvedName, size=$resolvedSize');
+      items.add(_ImageItem(
+        path: resolvedPath,
+        name: resolvedName,
+        size: resolvedSize,
+      ));
+    }
+
+    debugPrint('Updating state with ${items.length} images');
+    setState(() {
+      _images.addAll(items);
     });
+    debugPrint('State updated, total images: ${_images.length}');
   }
 
   void _removeImage(int index) {
@@ -57,6 +103,72 @@ final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
   }
 
   String _pad(int n) => n.toString().padLeft(2, '0');
+
+  Future<void> _editImages() async {
+    if (_images.isEmpty) return;
+
+    final tempPdf = File('${Directory.systemTemp.path}/nextdoc_edit_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await tempPdf.parent.create(recursive: true);
+
+    try {
+      final doc = MetadataService.createPdfDocument(
+        title: 'Edit Images',
+        subject: 'Temporary PDF for editing',
+        keywords: 'NextDoc, Editor Studio',
+      );
+      for (final item in _images) {
+        final bytes = await File(item.path).readAsBytes();
+        final decoded = img.decodeImage(bytes);
+        if (decoded == null) continue;
+        doc.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat(decoded.width.toDouble(), decoded.height.toDouble()),
+            margin: const pw.EdgeInsets.all(0),
+            build: (ctx) => pw.Center(child: pw.Image(pw.MemoryImage(bytes))),
+          ),
+        );
+      }
+      await tempPdf.writeAsBytes(await doc.save());
+
+      if (!mounted) return;
+      EditorResult? result;
+      await Navigator.of(context).push<EditorResult>(
+        MaterialPageRoute(
+          builder: (_) => UnifiedEditorScreen(
+            initialPath: tempPdf.path,
+            onSave: (r) => result = r,
+          ),
+        ),
+      );
+
+      if (result != null && mounted) {
+        final editedDoc = await PdfDocument.openFile(result!.filePath);
+        final newImages = <_ImageItem>[];
+        for (var i = 0; i < editedDoc.pagesCount; i++) {
+          final page = await editedDoc.getPage(i + 1);
+          final render = await page.render(width: 1200, height: 1600, format: PdfPageImageFormat.jpeg, quality: 85);
+          if (render == null) continue;
+          final imgPath = '${Directory.systemTemp.path}/nextdoc_edit_img_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+          await File(imgPath).writeAsBytes(render.bytes);
+          await page.close();
+          final stat = await File(imgPath).stat();
+          newImages.add(_ImageItem(path: imgPath, name: 'edited_page_${i + 1}.jpg', size: stat.size));
+        }
+        await editedDoc.close();
+
+        setState(() {
+          _images.clear();
+          _images.addAll(newImages);
+        });
+      }
+
+      try { await tempPdf.delete(); } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit failed: $e')));
+      }
+    }
+  }
 
   void _startConversion() {
     if (_images.isEmpty) {
@@ -223,15 +335,33 @@ final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
           ),
         ),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: _PrimaryButton(
-          label: _images.isEmpty
-              ? 'Select Images First'
-              : 'Convert ${_images.length} Image${_images.length > 1 ? 's' : ''} to PDF',
-          isEnabled: _images.isNotEmpty,
-          onTap: _startConversion,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_images.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: SizedBox(
+                width: double.infinity,
+                child: _PrimaryButton(
+                  label: 'Edit Selected Images',
+                  isEnabled: true,
+                  onTap: _editImages,
+                  isSecondary: true,
+                ),
+              ),
+            ),
+          SizedBox(
+            width: double.infinity,
+            child: _PrimaryButton(
+              label: _images.isEmpty
+                  ? 'Select Images First'
+                  : 'Convert ${_images.length} Image${_images.length > 1 ? 's' : ''} to PDF',
+              isEnabled: _images.isNotEmpty,
+              onTap: _startConversion,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -425,11 +555,13 @@ final class _PrimaryButton extends StatefulWidget {
   final String label;
   final bool isEnabled;
   final VoidCallback onTap;
+  final bool isSecondary;
 
   const _PrimaryButton({
     required this.label,
     required this.isEnabled,
     required this.onTap,
+    this.isSecondary = false,
   });
 
   @override
@@ -442,8 +574,12 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final effectiveColor =
-        widget.isEnabled ? AppColors.primary : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60);
+    final effectiveColor = widget.isSecondary
+        ? Colors.transparent
+        : (widget.isEnabled ? AppColors.primary : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60));
+    final borderSide = widget.isSecondary
+        ? BorderSide(color: AppColors.iconEditorStudio.withAlpha(80))
+        : null;
 
     return GestureDetector(
       onTapDown: widget.isEnabled
@@ -464,13 +600,14 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
           decoration: BoxDecoration(
             color: effectiveColor,
             borderRadius: BorderRadius.circular(AppRadius.md),
+            border: borderSide != null ? Border.all(color: AppColors.iconEditorStudio.withAlpha(80)) : null,
           ),
           child: Center(
             child: Text(
               widget.label,
               style: AppTextStyles.button.copyWith(
                 color: widget.isEnabled
-                    ? AppColors.onPrimary
+                    ? (widget.isSecondary ? AppColors.iconEditorStudio : AppColors.onPrimary)
                     : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(120),
               ),
               textAlign: TextAlign.center,

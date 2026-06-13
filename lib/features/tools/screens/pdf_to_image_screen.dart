@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,8 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/settings_service.dart';
 import '../../../core/theme/typography.dart';
+import '../../editor_studio/models/editor_result.dart';
+import '../../editor_studio/screens/unified_editor_screen.dart';
 
 final class PdfToImageScreen extends ConsumerStatefulWidget {
   const PdfToImageScreen({super.key});
@@ -87,6 +90,33 @@ final class _PdfToImageScreenState extends ConsumerState<PdfToImageScreen> {
         _selectedPages = {};
       }
     });
+  }
+
+  Future<void> _editPdf() async {
+    if (_filePath == null) return;
+
+    EditorResult? result;
+    await Navigator.of(context).push<EditorResult>(
+      MaterialPageRoute(
+        builder: (_) => UnifiedEditorScreen(
+          initialPath: _filePath,
+          onSave: (r) => result = r,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final newFile = File(result!.filePath);
+      final stat = await newFile.stat();
+      setState(() {
+        _filePath = result!.filePath;
+        _fileName = _fileName?.replaceAll('.pdf', '_edited.pdf');
+        _fileSize = stat.size;
+        _pageCount = result!.pageCount;
+        _selectedPages = Set.from(List.generate(result!.pageCount, (i) => i));
+        _selectAll = true;
+      });
+    }
   }
 
   void _startExport() {
@@ -389,6 +419,7 @@ final class _PdfToImageScreenState extends ConsumerState<PdfToImageScreen> {
 
   Widget _buildBottomBar(bool isLight) {
     final enabled = _filePath != null && _selectedPages.isNotEmpty;
+    final hasFile = _filePath != null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -406,16 +437,35 @@ final class _PdfToImageScreenState extends ConsumerState<PdfToImageScreen> {
           ),
         ),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: _PrimaryButton(
-          label: enabled
-              ? 'Export ${_selectedPages.length} page${_selectedPages.length > 1 ? "s" : ""}'
-              : 'Select a File First',
-          isEnabled: enabled,
-          accent: AppColors.iconPdfToJpg,
-          onTap: _startExport,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasFile)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: SizedBox(
+                width: double.infinity,
+                child: _PrimaryButton(
+                  label: 'Edit PDF',
+                  isEnabled: true,
+                  accent: AppColors.iconEditorStudio,
+                  isSecondary: true,
+                  onTap: _editPdf,
+                ),
+              ),
+            ),
+          SizedBox(
+            width: double.infinity,
+            child: _PrimaryButton(
+              label: enabled
+                  ? 'Export ${_selectedPages.length} page${_selectedPages.length > 1 ? "s" : ""}'
+                  : 'Select a File First',
+              isEnabled: enabled,
+              accent: AppColors.iconPdfToJpg,
+              onTap: _startExport,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -723,12 +773,14 @@ final class _PrimaryButton extends StatefulWidget {
   final bool isEnabled;
   final Color accent;
   final VoidCallback onTap;
+  final bool isSecondary;
 
   const _PrimaryButton({
     required this.label,
     required this.isEnabled,
     required this.accent,
     required this.onTap,
+    this.isSecondary = false,
   });
 
   @override
@@ -741,8 +793,9 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final effectiveColor =
-        widget.isEnabled ? widget.accent : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60);
+    final effectiveColor = widget.isSecondary
+        ? Colors.transparent
+        : (widget.isEnabled ? widget.accent : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60));
 
     return GestureDetector(
       onTapDown: widget.isEnabled
@@ -763,13 +816,14 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
           decoration: BoxDecoration(
             color: effectiveColor,
             borderRadius: BorderRadius.circular(AppRadius.md),
+            border: widget.isSecondary ? Border.all(color: widget.accent.withAlpha(80)) : null,
           ),
           child: Center(
             child: Text(
               widget.label,
               style: AppTextStyles.button.copyWith(
                 color: widget.isEnabled
-                    ? AppColors.onPrimary
+                    ? (widget.isSecondary ? widget.accent : AppColors.onPrimary)
                     : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(120),
               ),
               textAlign: TextAlign.center,

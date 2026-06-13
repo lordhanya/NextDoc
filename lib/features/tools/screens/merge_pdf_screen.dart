@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,8 @@ import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../editor_studio/models/editor_result.dart';
+import '../../editor_studio/screens/unified_editor_screen.dart';
 
 final class MergePdfScreen extends ConsumerStatefulWidget {
   const MergePdfScreen({super.key});
@@ -84,6 +87,34 @@ final class _MergePdfScreenState extends ConsumerState<MergePdfScreen> {
   }
 
   String _pad(int n) => n.toString().padLeft(2, '0');
+
+  Future<void> _editFile(int index) async {
+    final item = _files[index];
+    EditorResult? result;
+
+    await Navigator.of(context).push<EditorResult>(
+      MaterialPageRoute(
+        builder: (_) => UnifiedEditorScreen(
+          initialPath: item.path,
+          onSave: (r) => result = r,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final newFile = File(result!.filePath);
+      final stat = await newFile.stat();
+      setState(() {
+        _files[index] = _PdfItem(
+          path: result!.filePath,
+          name: item.name.replaceAll('.pdf', '_edited.pdf'),
+          size: stat.size,
+          pageCount: result!.pageCount,
+        );
+      });
+      _loadMetadata();
+    }
+  }
 
   void _startMerge() {
     if (_files.length < 2) {
@@ -226,6 +257,7 @@ final class _MergePdfScreenState extends ConsumerState<MergePdfScreen> {
                 item: item,
                 index: index,
                 onDelete: () => _removeFile(index),
+                onEdit: () => _editFile(index),
               );
             },
           ),
@@ -326,12 +358,14 @@ final class _PdfFileCard extends ConsumerWidget {
   final _PdfItem item;
   final int index;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   const _PdfFileCard({
     super.key,
     required this.item,
     required this.index,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -384,6 +418,15 @@ final class _PdfFileCard extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+            IconButton(
+              onPressed: onEdit,
+              icon: const Icon(
+                LucideIcons.pen_tool,
+                size: 18,
+                color: AppColors.iconEditorStudio,
+              ),
+              visualDensity: VisualDensity.compact,
             ),
             IconButton(
               onPressed: onDelete,

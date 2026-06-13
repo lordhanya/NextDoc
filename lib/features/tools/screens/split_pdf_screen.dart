@@ -10,6 +10,8 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/split_pdf_service.dart';
 import '../../../core/theme/typography.dart';
+import '../../editor_studio/models/editor_result.dart';
+import '../../editor_studio/screens/unified_editor_screen.dart';
 
 final class SplitPdfScreen extends ConsumerStatefulWidget {
   const SplitPdfScreen({super.key});
@@ -92,6 +94,28 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
     setState(() {
       _selectedPages = {};
     });
+  }
+
+  Future<void> _editPdf() async {
+    if (_filePath == null) return;
+
+    EditorResult? result;
+    await Navigator.of(context).push<EditorResult>(
+      MaterialPageRoute(
+        builder: (_) => UnifiedEditorScreen(
+          initialPath: _filePath,
+          onSave: (r) => result = r,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _filePath = result!.filePath;
+        _fileName = _fileName?.replaceAll('.pdf', '_edited.pdf');
+        _totalPages = result!.pageCount;
+      });
+    }
   }
 
   void _startSplit() {
@@ -469,6 +493,7 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
   Widget _buildBottomBar() {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final count = _selectedPages.length;
+    final hasFile = _filePath != null;
     return Container(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
@@ -487,27 +512,51 @@ final class _SplitPdfScreenState extends ConsumerState<SplitPdfScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: count > 0 ? _startSplit : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              disabledBackgroundColor: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
-              foregroundColor: AppColors.onPrimary,
-              disabledForegroundColor: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasFile)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _editPdf,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.iconEditorStudio,
+                      side: BorderSide(color: AppColors.iconEditorStudio.withAlpha(80)),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    child: Text('Edit Before Split', style: AppTextStyles.button),
+                  ),
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: count > 0 ? _startSplit : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: isLight ? AppColors.lightSurface2 : AppColors.darkSurface2,
+                  foregroundColor: AppColors.onPrimary,
+                  disabledForegroundColor: isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                ),
+                child: Text(
+                  count > 0
+                      ? 'Split $_splitModeLabel ($count page${count > 1 ? 's' : ''})'
+                      : 'Select pages to split',
+                  style: AppTextStyles.button,
+                ),
               ),
             ),
-            child: Text(
-              count > 0
-                  ? 'Split $_splitModeLabel ($count page${count > 1 ? 's' : ''})'
-                  : 'Select pages to split',
-              style: AppTextStyles.button,
-            ),
-          ),
+          ],
         ),
       ),
     );

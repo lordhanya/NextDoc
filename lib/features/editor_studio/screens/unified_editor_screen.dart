@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_cropper/image_cropper.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/metadata_service.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/services/file_storage_service.dart';
 import '../models/editor_history.dart';
+import '../models/editor_result.dart';
 import '../models/editor_tool.dart';
 import '../services/adjustments_service.dart';
 import '../services/filters_service.dart';
@@ -25,7 +29,9 @@ import '../widgets/watermark_panel.dart';
 
 final class UnifiedEditorScreen extends StatefulWidget {
   final String? initialPath;
-  const UnifiedEditorScreen({super.key, this.initialPath});
+  final ValueChanged<EditorResult>? onSave;
+
+  const UnifiedEditorScreen({super.key, this.initialPath, this.onSave});
 
   @override
   State<UnifiedEditorScreen> createState() => _UnifiedEditorScreenState();
@@ -118,7 +124,9 @@ final class _UnifiedEditorScreenState extends State<UnifiedEditorScreen> {
   Future<void> _openFile(String path) async {
     setState(() => _isLoading = true);
 
-    final ext = path.split('.').last.toLowerCase();
+    final uri = Uri.parse(path);
+    _fileName = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : 'document.pdf';
+    final ext = _fileName.split('.').last.toLowerCase();
     _isPdf = ext == 'pdf';
 
     try {
@@ -511,41 +519,90 @@ final class _UnifiedEditorScreenState extends State<UnifiedEditorScreen> {
     if (_pageImages.isEmpty) return;
     setState(() => _isSaving = true);
 
-    try {
-      String finalPath;
-      if (_isPdf) {
-        final outPath = await _pdfService.rebuildPdf(
-          pageImages: _pageOrder.map((i) => _pageImages[i]).toList(),
-          outputFileName: _fileName,
-        );
-        finalPath = await FileStorageService().copyToDownloads(
-          sourcePath: outPath,
-          fileName: _fileName,
-          toolFolder: 'Editor_Studio',
-        );
-      } else {
-        final baseName = _fileName.replaceAll('.${_fileName.split('.').last}', '');
-        final outputName = '${baseName}_edited.jpg';
-        final tempDir = await FileStorageService.createTempDir('Editor_Studio');
-        final tempPath = '${tempDir.path}/$outputName';
-        await File(tempPath).writeAsBytes(_pageImages[0]);
-        finalPath = await FileStorageService().copyToDownloads(
-          sourcePath: tempPath,
-          fileName: outputName,
-          toolFolder: 'Editor_Studio',
-        );
-      }
+    final safeName = _fileName.isNotEmpty ? _fileName : 'document.pdf';
+    debugPrint('--- Editor Studio Save ---');
+    debugPrint('Save FileName: $safeName');
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to $finalPath'),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      if (!mounted) return;
-      Navigator.of(context).pop();
+    try {
+      if (widget.onSave != null) {
+        final sortedPages = _pageOrder.map((i) => _pageImages[i]).toList();
+        final tempDir = Directory.systemTemp;
+        final tempFile = File('${tempDir.path}/nextdoc_editor_temp_${DateTime.now().millisecondsSinceEpoch}.pdf');
+        await tempFile.parent.create(recursive: true);
+        debugPrint('Temp file: ${tempFile.path}');
+
+        if (_isPdf) {
+          final outPath = await _pdfService.rebuildPdf(
+            pageImages: sortedPages,
+            outputFileName: safeName,
+          );
+          debugPrint('Rebuild PDF outPath: $outPath');
+          await File(outPath).copy(tempFile.path);
+        } else {
+          final doc = MetadataService.createPdfDocument(
+            title: safeName,
+            subject: 'Edited with NextDoc Editor Studio',
+            keywords: 'NextDoc, Editor Studio',
+          );
+          for (final bytes in sortedPages) {
+            final decoded = img.decodeImage(bytes);
+            if (decoded == null) continue;
+            doc.addPage(
+              pw.Page(
+                pageFormat: PdfPageFormat(decoded.width.toDouble(), decoded.height.toDouble()),
+                margin: const pw.EdgeInsets.all(0),
+                build: (ctx) => pw.Center(child: pw.Image(pw.MemoryImage(bytes))),
+              ),
+            );
+          }
+          await tempFile.writeAsBytes(await doc.save());
+        }
+
+        debugPrint('Final output path (tempFile): ${tempFile.path}');
+        widget.onSave!(EditorResult(
+          filePath: tempFile.path,
+          pageImages: sortedPages,
+          pageCount: sortedPages.length,
+          isPdf: true,
+        ));
+        if (!mounted) return;
+        Navigator.of(context).pop();
+      } else {
+        String finalPath;
+        if (_isPdf) {
+          final outPath = await _pdfService.rebuildPdf(
+            pageImages: _pageOrder.map((i) => _pageImages[i]).toList(),
+            outputFileName: safeName,
+          );
+          finalPath = await FileStorageService().copyToDownloads(
+            sourcePath: outPath,
+            fileName: safeName,
+            toolFolder: 'Editor_Studio',
+          );
+        } else {
+          final baseName = safeName.replaceAll('.${safeName.split('.').last}', '');
+          final outputName = '${baseName}_edited.jpg';
+          final tempDir = await FileStorageService.createTempDir('Editor_Studio');
+          final tempPath = '${tempDir.path}/$outputName';
+          await File(tempPath).writeAsBytes(_pageImages[0]);
+          finalPath = await FileStorageService().copyToDownloads(
+            sourcePath: tempPath,
+            fileName: outputName,
+            toolFolder: 'Editor_Studio',
+          );
+        }
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Saved to $finalPath'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        if (!mounted) return;
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

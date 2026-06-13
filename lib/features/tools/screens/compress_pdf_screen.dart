@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,8 @@ import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../editor_studio/models/editor_result.dart';
+import '../../editor_studio/screens/unified_editor_screen.dart';
 
 final class CompressPdfScreen extends ConsumerStatefulWidget {
   const CompressPdfScreen({super.key});
@@ -71,6 +74,31 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
   }
 
   String _pad(int n) => n.toString().padLeft(2, '0');
+
+  Future<void> _editPdf() async {
+    if (_filePath == null) return;
+
+    EditorResult? result;
+    await Navigator.of(context).push<EditorResult>(
+      MaterialPageRoute(
+        builder: (_) => UnifiedEditorScreen(
+          initialPath: _filePath,
+          onSave: (r) => result = r,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final newFile = File(result!.filePath);
+      final stat = await newFile.stat();
+      setState(() {
+        _filePath = result!.filePath;
+        _fileName = _fileName?.replaceAll('.pdf', '_edited.pdf');
+        _fileSize = stat.size;
+        _pageCount = result!.pageCount;
+      });
+    }
+  }
 
   void _startCompress() {
     if (_filePath == null || _filePath!.isEmpty) {
@@ -322,6 +350,7 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
 
   Widget _buildBottomBar(bool isLight) {
     final enabled = _filePath != null;
+    final hasFile = _filePath != null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -339,13 +368,31 @@ final class _CompressPdfScreenState extends ConsumerState<CompressPdfScreen> {
           ),
         ),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: _PrimaryButton(
-          label: enabled ? 'Compress PDF' : 'Select a File First',
-          isEnabled: enabled,
-          onTap: _startCompress,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasFile)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: SizedBox(
+                width: double.infinity,
+                child: _PrimaryButton(
+                  label: 'Edit Before Compress',
+                  isEnabled: true,
+                  isSecondary: true,
+                  onTap: _editPdf,
+                ),
+              ),
+            ),
+          SizedBox(
+            width: double.infinity,
+            child: _PrimaryButton(
+              label: enabled ? 'Compress PDF' : 'Select a File First',
+              isEnabled: enabled,
+              onTap: _startCompress,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -450,11 +497,13 @@ final class _PrimaryButton extends StatefulWidget {
   final String label;
   final bool isEnabled;
   final VoidCallback onTap;
+  final bool isSecondary;
 
   const _PrimaryButton({
     required this.label,
     required this.isEnabled,
     required this.onTap,
+    this.isSecondary = false,
   });
 
   @override
@@ -467,8 +516,9 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final effectiveColor =
-        widget.isEnabled ? AppColors.primary : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60);
+    final effectiveColor = widget.isSecondary
+        ? Colors.transparent
+        : (widget.isEnabled ? AppColors.primary : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(60));
 
     return GestureDetector(
       onTapDown: widget.isEnabled
@@ -489,13 +539,14 @@ final class _PrimaryButtonState extends State<_PrimaryButton> {
           decoration: BoxDecoration(
             color: effectiveColor,
             borderRadius: BorderRadius.circular(AppRadius.md),
+            border: widget.isSecondary ? Border.all(color: AppColors.iconEditorStudio.withAlpha(80)) : null,
           ),
           child: Center(
             child: Text(
               widget.label,
               style: AppTextStyles.button.copyWith(
                 color: widget.isEnabled
-                    ? AppColors.onPrimary
+                    ? (widget.isSecondary ? AppColors.iconEditorStudio : AppColors.onPrimary)
                     : (isLight ? AppColors.lightTextMuted : AppColors.darkTextMuted).withAlpha(120),
               ),
               textAlign: TextAlign.center,
