@@ -1,15 +1,13 @@
 <p align="center">
-  <img src="assets/logo/logo.png" alt="NextDoc Logo" width="100" height="100">
+  <img src="assets/logo/logo.png" alt="NextDoc Logo" width="200" height="200">
 </p>
-
-<h1 align="center">NextDoc</h1>
 
 <p align="center">
   <strong>Modern Document Management — All-in-One PDF & Image Tool</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Flutter-3.44+-02569B?logo=flutter?style=for-the-badge" alt="Flutter">
+  <img src="https://img.shields.io/badge/Flutter-3.44+-02569B?style=for-the-badge" alt="Flutter">
   <img src="https://img.shields.io/badge/version-1.2.0-blue?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey?style=for-the-badge" alt="Platform">
@@ -102,20 +100,16 @@ Every tool integrates with **Editor Studio** — a unified editing workspace whe
 
 ## 📸 Screenshots
 
-<p align="center">
+<div align="center">
   <table>
     <tr>
-      <td align="center"><img src="screenshots/home.png" alt="Home Screen" width="200"><br><em>Home Screen</em></td>
-      <td align="center"><img src="screenshots/tools.png" alt="Tools" width="200"><br><em>Tools</em></td>
-      <td align="center"><img src="screenshots/editor.png" alt="Editor Studio" width="200"><br><em>Editor Studio</em></td>
-      <td align="center"><img src="screenshots/settings.png" alt="Settings" width="200"><br><em>Settings</em></td>
+      <td align="center"><img src="screenshots/home_page.png" alt="Home Screen" width="200"><br><em>Home Screen</em></td>
+      <td align="center"><img src="screenshots/Tools.png" alt="Tools" width="200"><br><em>Tools</em></td>
+      <td align="center"><img src="screenshots/Merge_PDF.png" alt="Merge PDF" width="200"><br><em>Merge PDF</em></td>
+      <td align="center"><img src="screenshots/Compress_PDF.png" alt="Compress PDF" width="200"><br><em>Compress PDF</em></td>
     </tr>
   </table>
-</p>
-
-<p align="center">
-  <em>Replace the images in <code>screenshots/</code> with your own screenshots.</em>
-</p>
+</div>
 
 <br>
 
