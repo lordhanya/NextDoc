@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon/icon.png" alt="NextDoc Logo" width="100" height="100">
+  <img src="assets/logo/logo.png" alt="NextDoc Logo" width="100" height="100">
 </p>
 
 <h1 align="center">NextDoc</h1>
@@ -9,22 +9,17 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Flutter-3.44+-02569B?logo=flutter" alt="Flutter">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="Version">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey" alt="Platform">
+  <img src="https://img.shields.io/badge/Flutter-3.44+-02569B?logo=flutter?style=for-the-badge" alt="Flutter">
+  <img src="https://img.shields.io/badge/version-1.2.0-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey?style=for-the-badge" alt="Platform">
 </p>
-
 <br>
 
 <!-- ──────── Screenshot Banner ──────── -->
 
 <p align="center">
-  <img src="screenshots/banner.png" alt="NextDoc Banner" width="820">
-</p>
-
-<p align="center">
-  <em>↑ Replace with your app banner/screenshots collage</em>
+  <img src="screenshots/banner.png" alt="NextDoc Banner">
 </p>
 
 <br>
