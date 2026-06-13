@@ -30,6 +30,7 @@ dependencies:
   shared_preferences: ^2.4.0
   gal: ^2.3.2
   syncfusion_flutter_pdf: ^33.2.7
+  image_cropper: ^12.2.1
 
 dev_dependencies:
   flutter_test:

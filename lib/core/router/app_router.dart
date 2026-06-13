@@ -14,6 +14,7 @@ import '../../features/tools/screens/processing_screen.dart';
 import '../../features/tools/screens/success_screen.dart';
 import '../../features/pdf_viewer/pdf_viewer_page.dart';
 import '../../features/welcome/welcome_screen.dart';
+import '../../features/editor_studio/screens/editor_studio_screen.dart';
 import '../widgets/app_scaffold.dart';
 
 abstract final class AppRouter {
@@ -138,6 +139,14 @@ abstract final class AppRouter {
           context,
           state,
           const PdfProtectionScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/tools/editor-studio',
+        pageBuilder: (context, state) => _slideUpTransition(
+          context,
+          state,
+          const EditorStudioScreen(),
         ),
       ),
       GoRoute(

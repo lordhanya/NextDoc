@@ -53,6 +53,13 @@ final class ToolsPage extends StatelessWidget {
       route: '/tools/pdf-protection',
       color: AppColors.iconProtection,
     ),
+    _ToolInfo(
+      icon: LucideIcons.pen_tool,
+      label: 'Editor Studio',
+      description: 'Crop, rotate, and organize documents',
+      route: '/tools/editor-studio',
+      color: AppColors.iconEditorStudio,
+    ),
   ];
 
   @override
