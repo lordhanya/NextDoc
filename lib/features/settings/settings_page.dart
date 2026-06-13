@@ -641,13 +641,13 @@ final class _AboutSection extends StatelessWidget {
               const _SettingsRow(
                 icon: LucideIcons.tag,
                 title: 'Version',
-                trailing: _AboutValue('1.0.0'),
+                trailing: _AboutValue('1.2.0'),
                 semanticColor: AppColors.settingsAbout,
               ),
               const _SettingsRow(
                 icon: LucideIcons.hash,
                 title: 'Build Number',
-                trailing: _AboutValue('1'),
+                trailing: _AboutValue('2'),
                 semanticColor: AppColors.settingsAbout,
               ),
               const _SettingsRow(
