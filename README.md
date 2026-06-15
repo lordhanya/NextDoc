@@ -109,7 +109,11 @@ Every tool integrates with **Editor Studio** — a unified editing workspace whe
       <td align="center"><img src="screenshots/Compress_PDF.png" alt="Compress PDF" width="200"><br><em>Compress PDF</em></td>
     </tr>
   </table>
+<<<<<<< HEAD
 </div>
+=======
+</p>
+>>>>>>> 783d649 (Fix: issue on document saving, now all the files (images/pdfs) will be saved in Internal Storage/Download/NextDoc folder)
 
 <br>
 
