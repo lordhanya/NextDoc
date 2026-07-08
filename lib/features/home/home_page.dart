@@ -18,6 +18,8 @@ final class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = Theme.of(context).brightness == Brightness.light;
 
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Stack(
       children: [
         _BackgroundAtmosphere(isLight: isLight),
@@ -31,6 +33,11 @@ final class HomePage extends ConsumerWidget {
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
             ],
           ),
+        ),
+        Positioned(
+          right: 20,
+          bottom: 20 + bottomInset,
+          child: _ScanFab(isLight: isLight),
         ),
       ],
     );
@@ -293,6 +300,63 @@ final class _ToolDashboardCardState extends State<_ToolDashboardCard> {
               overflow: TextOverflow.ellipsis,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scan FAB — camera icon to open Scan Document tool
+// ─────────────────────────────────────────────────────────────────────────────
+
+final class _ScanFab extends StatefulWidget {
+  final bool isLight;
+  const _ScanFab({required this.isLight});
+
+  @override
+  State<_ScanFab> createState() => _ScanFabState();
+}
+
+final class _ScanFabState extends State<_ScanFab> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        context.push('/tools/scan');
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.90 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6366F1), Color(0xFF7C5CFF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withAlpha(100),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: AppColors.primary.withAlpha(40),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: const Icon(LucideIcons.camera, color: Colors.white, size: 24),
         ),
       ),
     );

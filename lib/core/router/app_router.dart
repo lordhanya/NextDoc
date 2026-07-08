@@ -7,6 +7,8 @@ import '../../features/settings/settings_page.dart';
 import '../../features/tools/screens/merge_pdf_screen.dart';
 import '../../features/tools/screens/compress_pdf_screen.dart';
 import '../../features/tools/screens/image_to_pdf_screen.dart';
+import '../../features/tools/screens/ocr_screen.dart';
+import '../../features/tools/screens/scan_screen.dart';
 import '../../features/tools/screens/split_pdf_screen.dart';
 import '../../features/tools/screens/pdf_to_image_screen.dart';
 import '../../features/tools/screens/pdf_protection_screen.dart';
@@ -147,6 +149,22 @@ abstract final class AppRouter {
           context,
           state,
           const EditorStudioScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/tools/scan',
+        pageBuilder: (context, state) => _slideUpTransition(
+          context,
+          state,
+          const ScanScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/tools/ocr',
+        pageBuilder: (context, state) => _slideUpTransition(
+          context,
+          state,
+          const OcrScreen(),
         ),
       ),
       GoRoute(

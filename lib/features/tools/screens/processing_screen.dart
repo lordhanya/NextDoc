@@ -62,6 +62,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   String? _pdfToImagePath;
   List<int> _pdfToImageSelectedPages = [];
   ExportQuality _pdfToImageQuality = ExportQuality.standard;
+  String _saveFolder = 'Image_to_PDF';
 
   @override
   void initState() {
@@ -86,6 +87,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         _isImageToPdf = true;
         _imagePaths = List<String>.from(extra['imagePaths'] as List);
         _fileName = extra['fileName'] as String? ?? 'NextDoc_output.pdf';
+        _saveFolder = extra['saveFolder'] as String? ?? 'Image_to_PDF';
         return;
       }
       if (type == 'merge') {
@@ -200,7 +202,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       final finalPath = await FileStorageService().copyToDownloads(
         sourcePath: outputPath,
         fileName: _fileName,
-        toolFolder: 'Image_to_PDF',
+        toolFolder: _saveFolder,
       );
 
       if (!mounted) return;
@@ -262,7 +264,7 @@ final class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       'fileName': _fileName,
       'fileSize': fileSize,
       'pageCount': _imagePaths.length,
-      'saveFolder': 'Downloads/NextDoc/Image_to_PDF/',
+      'saveFolder': 'Downloads/NextDoc/$_saveFolder/',
     });
   }
 

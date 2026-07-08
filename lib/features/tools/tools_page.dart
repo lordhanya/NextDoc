@@ -60,6 +60,20 @@ final class ToolsPage extends StatelessWidget {
       route: '/tools/editor-studio',
       color: AppColors.iconEditorStudio,
     ),
+    _ToolInfo(
+      icon: LucideIcons.scan,
+      label: 'Scan Document',
+      description: 'Capture documents with camera and convert to PDF',
+      route: '/tools/scan',
+      color: AppColors.iconScan,
+    ),
+    _ToolInfo(
+      icon: LucideIcons.scan_text,
+      label: 'OCR Text',
+      description: 'Extract text from images using OCR',
+      route: '/tools/ocr',
+      color: AppColors.iconOcr,
+    ),
   ];
 
   @override
