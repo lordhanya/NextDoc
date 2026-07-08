@@ -12,6 +12,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../../editor_studio/models/editor_result.dart';
 import '../../editor_studio/screens/unified_editor_screen.dart';
 
@@ -26,19 +27,23 @@ final class _ScanScreenState extends ConsumerState<ScanScreen> {
   final _picker = ImagePicker();
   final _pages = <_ScanPage>[];
   int _selectedIndex = 0;
+  bool _isLoading = false;
 
   Future<void> _capturePage() async {
+    setState(() => _isLoading = true);
     try {
       final xfile = await _picker.pickImage(source: ImageSource.camera, imageQuality: 90);
-      if (xfile == null) return;
       if (!mounted) return;
+      if (xfile == null) { setState(() => _isLoading = false); return; }
       setState(() {
+        _isLoading = false;
         _pages.add(_ScanPage(path: xfile.path, rotation: 0));
         _selectedIndex = _pages.length - 1;
       });
     } catch (e) {
       debugPrint('Camera capture error: $e');
       if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Camera failed: $e')),
         );
@@ -63,6 +68,8 @@ final class _ScanScreenState extends ConsumerState<ScanScreen> {
 
   Future<void> _editPages() async {
     if (_pages.isEmpty) return;
+    if (!mounted) return;
+    setState(() => _isLoading = true);
 
     final tempPdf = File('${Directory.systemTemp.path}/nextdoc_scan_edit_${DateTime.now().millisecondsSinceEpoch}.pdf');
     await tempPdf.parent.create(recursive: true);
@@ -126,6 +133,8 @@ final class _ScanScreenState extends ConsumerState<ScanScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit failed: $e')));
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -182,18 +191,24 @@ final class _ScanScreenState extends ConsumerState<ScanScreen> {
         title: Text('Scan Document', style: AppTextStyles.title),
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: _pages.isEmpty
-                  ? _buildEmptyState()
-                  : _buildPreview(),
+            Column(
+              children: [
+                Expanded(
+                  child: _pages.isEmpty
+                      ? _buildEmptyState()
+                      : _buildPreview(),
+                ),
+                if (_pages.isNotEmpty) ...[
+                  _buildThumbnailStrip(),
+                  _buildActionButtons(),
+                ],
+                _buildBottomBar(),
+              ],
             ),
-            if (_pages.isNotEmpty) ...[
-              _buildThumbnailStrip(),
-              _buildActionButtons(),
-            ],
-            _buildBottomBar(),
+            if (_isLoading)
+              const ShimmerOverlay(message: 'Opening camera...'),
           ],
         ),
       ),

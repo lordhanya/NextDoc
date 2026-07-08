@@ -10,6 +10,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/database/isar_service.dart';
+import '../../../core/database/recent_file_entity.dart';
+import '../../../core/providers/recent_files_provider.dart';
 import '../../../core/services/file_storage_service.dart';
 import '../../../core/theme/typography.dart';
 
@@ -103,11 +106,23 @@ final class _OcrScreenState extends ConsumerState<OcrScreen> {
       final tempFile = File('${tempDir.path}/$fileName');
       await tempFile.writeAsString(_recognizedText);
 
-      await FileStorageService().copyToDownloads(
+      final finalPath = await FileStorageService().copyToDownloads(
         sourcePath: tempFile.path,
         fileName: fileName,
         toolFolder: 'OCR_Text',
       );
+
+      if (!mounted) return;
+
+      final isarService = IsarService.instance;
+      await isarService.saveRecentFile(RecentFileEntity(
+        fileName: fileName,
+        filePath: finalPath,
+        fileSize: await File(finalPath).length(),
+        fileType: 'text',
+        createdAt: DateTime.now(),
+      ));
+      refreshRecentFiles(ref);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

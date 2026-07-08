@@ -23,6 +23,7 @@ import 'glass_card.dart';
 import 'pdf_thumbnail_card.dart';
 import 'rename_dialog.dart';
 import 'section_title.dart';
+import 'shimmer_loading.dart';
 
 enum RecentFilesDisplayMode { list, grid }
 
@@ -42,6 +43,28 @@ final class RecentFilesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filesAsync = ref.watch(filteredRecentFilesProvider);
     final query = ref.watch(searchQueryProvider);
+
+    if (filesAsync.isLoading) {
+      return Padding(
+        padding: padding ??
+            const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.xxl,
+              AppSpacing.screenPadding,
+              0,
+            ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionTitle(title: title ?? 'Recent Files'),
+            displayMode == RecentFilesDisplayMode.grid
+                ? const ShimmerRecentFilesGrid()
+                : const ShimmerRecentFilesRow(),
+          ],
+        ),
+      );
+    }
+
     final files = filesAsync.valueOrNull ?? [];
 
     return Padding(

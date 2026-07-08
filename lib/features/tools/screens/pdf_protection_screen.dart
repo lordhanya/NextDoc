@@ -8,6 +8,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/providers/recent_files_provider.dart';
 import '../../../core/services/file_picker_service.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 
 final class PdfProtectionScreen extends ConsumerStatefulWidget {
   const PdfProtectionScreen({super.key});
@@ -323,9 +324,15 @@ final class _PdfProtectionScreenState extends ConsumerState<PdfProtectionScreen>
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      '${_formattedSize(_fileSize)}  ·  ${_pageCount != null ? "$_pageCount page${_pageCount! > 1 ? "s" : ""}" : "Loading..."}',
-                      style: AppTextStyles.caption,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${_formattedSize(_fileSize)}  ·  ', style: AppTextStyles.caption),
+                        if (_pageCount != null)
+                          Text('$_pageCount page${_pageCount! > 1 ? "s" : ""}', style: AppTextStyles.caption)
+                        else
+                          const ShimmerText(width: 68, height: 14),
+                      ],
                     ),
                   ],
                 ),

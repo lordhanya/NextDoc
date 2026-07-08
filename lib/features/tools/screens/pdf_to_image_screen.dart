@@ -8,9 +8,10 @@ import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/providers/recent_files_provider.dart';
 import '../../../core/providers/settings_provider.dart';
-import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/settings_service.dart';
+import '../../../core/services/file_picker_service.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../../editor_studio/models/editor_result.dart';
 import '../../editor_studio/screens/unified_editor_screen.dart';
 
@@ -307,9 +308,15 @@ final class _PdfToImageScreenState extends ConsumerState<PdfToImageScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      '${_formattedSize(_fileSize)}  ·  ${_pageCount != null ? "$_pageCount page${_pageCount! > 1 ? "s" : ""}" : "Loading..."}',
-                      style: AppTextStyles.caption,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${_formattedSize(_fileSize)}  ·  ', style: AppTextStyles.caption),
+                        if (_pageCount != null)
+                          Text('$_pageCount page${_pageCount! > 1 ? "s" : ""}', style: AppTextStyles.caption)
+                        else
+                          const ShimmerText(width: 68, height: 14),
+                      ],
                     ),
                   ],
                 ),

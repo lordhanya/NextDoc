@@ -10,11 +10,11 @@ import 'package:pdfx/pdfx.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/models/selected_file_model.dart';
 import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/metadata_service.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../../editor_studio/models/editor_result.dart';
 import '../../editor_studio/screens/unified_editor_screen.dart';
 
@@ -28,59 +28,53 @@ final class ImageToPdfScreen extends ConsumerStatefulWidget {
 final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
   final _filePicker = FilePickerService();
   final _images = <_ImageItem>[];
+  bool _isLoading = false;
 
   Future<void> _pickImages() async {
-    debugPrint('=== JPG→PDF Picker ===');
-    debugPrint('Picker opened');
-    debugPrint('Picker type: FileType.image');
-    debugPrint('Allowed extensions: none (built-in image filter)');
-    List<SelectedFileModel> files;
+    setState(() => _isLoading = true);
     try {
-      files = await _filePicker.pickImages();
-      debugPrint('Selected file count: ${files.length}');
-    } catch (e) {
-      debugPrint('Picker threw exception: $e');
-      return;
-    }
-    if (!mounted) return;
-    if (files.isEmpty) {
-      debugPrint('Picker returned empty (user cancelled or error)');
-      return;
-    }
+      final files = await _filePicker.pickImages();
+      if (!mounted) return;
+      if (files.isEmpty) { setState(() => _isLoading = false); return; }
 
-    final tempDir = Directory.systemTemp;
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final tempDir = Directory.systemTemp;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-    debugPrint('Resolving paths for ${files.length} images');
-    final items = <_ImageItem>[];
-    for (var i = 0; i < files.length; i++) {
-      final file = files[i];
-      var resolvedPath = file.filePath;
-      var resolvedName = file.fileName;
-      var resolvedSize = file.fileSize;
+      final items = <_ImageItem>[];
+      for (var i = 0; i < files.length; i++) {
+        final file = files[i];
+        var resolvedPath = file.filePath;
+        var resolvedName = file.fileName;
+        var resolvedSize = file.fileSize;
 
-      if ((resolvedPath.isEmpty || !File(resolvedPath).existsSync()) && file.bytes != null) {
-        final ext = file.fileType.isNotEmpty ? '.${file.fileType}' : '.jpg';
-        resolvedName = resolvedName.isNotEmpty ? resolvedName : 'image_$i$ext';
-        resolvedPath = '${tempDir.path}/nextdoc_img_${timestamp}_$i$ext';
-        await File(resolvedPath).writeAsBytes(file.bytes!);
-        resolvedSize = file.bytes!.length;
-        debugPrint('  Wrote bytes -> $resolvedPath ($resolvedSize bytes)');
+        if ((resolvedPath.isEmpty || !File(resolvedPath).existsSync()) && file.bytes != null) {
+          final ext = file.fileType.isNotEmpty ? '.${file.fileType}' : '.jpg';
+          resolvedName = resolvedName.isNotEmpty ? resolvedName : 'image_$i$ext';
+          resolvedPath = '${tempDir.path}/nextdoc_img_${timestamp}_$i$ext';
+          await File(resolvedPath).writeAsBytes(file.bytes!);
+          resolvedSize = file.bytes!.length;
+        }
+
+        items.add(_ImageItem(
+          path: resolvedPath,
+          name: resolvedName,
+          size: resolvedSize,
+        ));
       }
 
-      debugPrint('  file: path=$resolvedPath, name=$resolvedName, size=$resolvedSize');
-      items.add(_ImageItem(
-        path: resolvedPath,
-        name: resolvedName,
-        size: resolvedSize,
-      ));
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _images.addAll(items);
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick images: $e')),
+        );
+      }
     }
-
-    debugPrint('Updating state with ${items.length} images');
-    setState(() {
-      _images.addAll(items);
-    });
-    debugPrint('State updated, total images: ${_images.length}');
   }
 
   void _removeImage(int index) {
@@ -106,6 +100,8 @@ final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
 
   Future<void> _editImages() async {
     if (_images.isEmpty) return;
+    if (!mounted) return;
+    setState(() => _isLoading = true);
 
     final tempPdf = File('${Directory.systemTemp.path}/nextdoc_edit_${DateTime.now().millisecondsSinceEpoch}.pdf');
     await tempPdf.parent.create(recursive: true);
@@ -167,6 +163,8 @@ final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit failed: $e')));
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -201,14 +199,20 @@ final class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
         title: Text('JPG to PDF', style: AppTextStyles.title),
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: _images.isEmpty
-                  ? _buildEmptyState()
-                  : _buildImageList(),
+            Column(
+              children: [
+                Expanded(
+                  child: _images.isEmpty
+                      ? _buildEmptyState()
+                      : _buildImageList(),
+                ),
+                _buildBottomBar(),
+              ],
             ),
-            _buildBottomBar(),
+            if (_isLoading)
+              const ShimmerOverlay(message: 'Processing images...'),
           ],
         ),
       ),

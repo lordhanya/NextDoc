@@ -6,10 +6,11 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_radius.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/providers/recent_files_provider.dart';
 import '../../../core/services/file_picker_service.dart';
 import '../../../core/services/pdf_service.dart';
+import '../../../core/providers/recent_files_provider.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../editor_studio/models/editor_result.dart';
 import '../../editor_studio/screens/unified_editor_screen.dart';
@@ -395,7 +396,7 @@ final class _PdfFileCard extends ConsumerWidget {
                     }
                     return _pdfPlaceholder(isLight);
                   },
-                  loading: () => _pdfPlaceholder(isLight),
+                  loading: () => const ShimmerThumbnail(width: 56, height: 56),
                   error: (_, _) => _pdfPlaceholder(isLight),
                 ),
               ),
@@ -412,9 +413,15 @@ final class _PdfFileCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    '${item.formattedSize}  ·  ${item.pageCount != null ? '${item.pageCount} page${item.pageCount! > 1 ? "s" : ""}' : "Loading..."}',
-                    style: AppTextStyles.caption,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${item.formattedSize}  ·  ', style: AppTextStyles.caption),
+                      if (item.pageCount != null)
+                        Text('${item.pageCount} page${item.pageCount! > 1 ? "s" : ""}', style: AppTextStyles.caption)
+                      else
+                        const ShimmerText(width: 68, height: 14),
+                    ],
                   ),
                 ],
               ),
